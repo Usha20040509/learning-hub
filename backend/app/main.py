@@ -13,9 +13,20 @@ from app.utils.logging import logger
 
 app = FastAPI(title=settings.app_name, version="0.1.0", debug=settings.debug)
 
+# app.add_middleware(
+#     CORSMiddleware,
+#     allow_origins=settings.allowed_origins.split(",") if settings.allowed_origins else ["*"],
+#     allow_credentials=True,
+#     allow_methods=["*"],
+#     allow_headers=["*"],
+# )
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.allowed_origins.split(",") if settings.allowed_origins else ["*"],
+    allow_origins=[
+        "http://localhost:5173",
+        "https://learning-hub-omega-nine.vercel.app",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
