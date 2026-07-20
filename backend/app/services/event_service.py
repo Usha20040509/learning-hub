@@ -124,10 +124,9 @@ class EventService:
                         assignment_included=data.assignment_included,
                         series_id=series_id,
                     )
-                    saved = self.repository.add(event)
-                    if not first_saved_event:
-                        first_saved_event = saved
-
+                saved = self.repository.add(event)
+                if not first_saved_event:
+                    first_saved_event = saved
                     participant_rows = [
                         EventParticipant(event_id=saved.id, employee_id=emp_id)
                         for emp_id in sorted(employee_ids)
