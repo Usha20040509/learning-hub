@@ -24,7 +24,8 @@ class EmployeeRepository(RepositoryBase[Employee]):
                 | Employee.department.ilike(pattern)
             )
         if department:
-            query = query.filter(Employee.department == department)
+            depts = [d.strip() for d in department.split(",")]
+            query = query.filter(Employee.department.in_(depts))
         if is_active is not None:
             query = query.filter(Employee.is_active == is_active)
         return query.order_by(Employee.id).all()

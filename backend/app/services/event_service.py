@@ -57,6 +57,48 @@ class EventService:
         from datetime import timedelta
         import uuid
 
+        proposed_times = []
+        if data.is_recurring and data.recurrence_until:
+            current_start = data.start_time
+            current_end = data.end_time
+            until_date = data.recurrence_until.date()
+            allowed_days: set[int] = set(data.recurrence_days) if data.recurrence_days else set(range(7))
+
+            while current_start.date() <= until_date:
+                if current_start.weekday() in allowed_days:
+                    proposed_times.append((current_start, current_end))
+                current_start += timedelta(days=1)
+                current_end += timedelta(days=1)
+
+            if not proposed_times:
+                raise APIException(
+                    "No occurrences were created — the selected days of the week never fall within the chosen date range.",
+                    400,
+                )
+        else:
+            proposed_times.append((data.start_time, data.end_time))
+
+        new_participants = set(employee_ids)
+        new_participants.add(data.organizer_id)
+
+        for p_start, p_end in proposed_times:
+            overlapping = self.repository.db.query(Event).filter(
+                Event.start_time < p_end,
+                Event.end_time > p_start
+            ).all()
+
+            for overlap_event in overlapping:
+                overlap_participants = {p.employee_id for p in overlap_event.participants}
+                if overlap_event.organizer_id:
+                    overlap_participants.add(overlap_event.organizer_id)
+                
+                clashing_people = new_participants.intersection(overlap_participants)
+                if clashing_people:
+                    clash_id = next(iter(clashing_people))
+                    emp = self.employee_repository.get_by_id(clash_id)
+                    name = f"{emp.first_name} {emp.last_name}" if emp else f"ID {clash_id}"
+                    raise APIException(f"Scheduling clash: {name} is already booked for '{overlap_event.title}' on {p_start.strftime('%b %d at %H:%M')}.", 409)
+
         if data.is_recurring and data.recurrence_until:
             current_start = data.start_time
             current_end = data.end_time
@@ -68,14 +110,12 @@ class EventService:
             first_saved_event = None
             series_id = str(uuid.uuid4())
 
-            while current_start.date() <= until_date:
-                # weekday() returns 0=Monday … 6=Sunday — matches our convention.
-                if current_start.weekday() in allowed_days:
-                    event = Event(
-                        title=data.title,
-                        description=data.description,
-                        start_time=current_start,
-                        end_time=current_end,
+            for p_start, p_end in proposed_times:
+                event = Event(
+                    title=data.title,
+                    description=data.description,
+                    start_time=p_start,
+                    end_time=p_end,
                         location=data.location,
                         status=data.status,
                         training_catalog_id=data.training_catalog_id,
@@ -100,15 +140,6 @@ class EventService:
                     ]
                     self.repository.db.add_all(team_rows)
                     self.repository.db.commit()
-
-                current_start += timedelta(days=1)
-                current_end += timedelta(days=1)
-
-            if not first_saved_event:
-                raise APIException(
-                    "No occurrences were created — the selected days of the week never fall within the chosen date range.",
-                    400,
-                )
 
             return self._to_read(first_saved_event)
         else:

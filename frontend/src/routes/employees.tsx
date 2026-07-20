@@ -1,11 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Search } from "lucide-react";
+import { Search, Filter } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getEmployees } from "@/lib/api";
 import type { EmployeeRead } from "@/lib/types";
@@ -23,17 +25,17 @@ export const Route = createFileRoute("/employees")({
 
 function EmployeesPage() {
   const [search, setSearch] = useState("");
-  const [department, setDepartment] = useState("");
+  const [selectedDepts, setSelectedDepts] = useState<string[]>([]);
   const [activeOnly, setActiveOnly] = useState(false);
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["employees", search, department, activeOnly],
+    queryKey: ["employees", search, selectedDepts, activeOnly],
     queryFn: () =>
       getEmployees({
         page: 1,
         page_size: 100,
         search: search || undefined,
-        department: department || undefined,
+        department: selectedDepts.length > 0 ? selectedDepts.join(",") : undefined,
         is_active: activeOnly ? true : undefined,
       }),
     keepPreviousData: true,
@@ -68,18 +70,29 @@ function EmployeesPage() {
               className="pl-9"
             />
           </div>
-          <select
-            value={department}
-            onChange={(event) => setDepartment(event.target.value)}
-            className="rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground"
-          >
-            <option value="">All departments</option>
-            {departments.map((dept) => (
-              <option key={dept} value={dept}>
-                {dept}
-              </option>
-            ))}
-          </select>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="h-9 gap-2 justify-start font-normal text-muted-foreground w-full sm:w-[200px]">
+                <Filter className="h-4 w-4" />
+                {selectedDepts.length > 0 ? `${selectedDepts.length} departments selected` : "All departments"}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-[200px]">
+              {departments.map((dept) => (
+                <DropdownMenuCheckboxItem
+                  key={dept}
+                  checked={selectedDepts.includes(dept)}
+                  onCheckedChange={(checked) => {
+                    setSelectedDepts((prev) =>
+                      checked ? [...prev, dept] : prev.filter((d) => d !== dept)
+                    );
+                  }}
+                >
+                  {dept}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
           <label className="inline-flex items-center gap-2 text-sm text-muted-foreground">
             <input
               type="checkbox"

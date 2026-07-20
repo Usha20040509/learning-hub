@@ -40,7 +40,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { EventDetailsDialog } from "@/components/EventDetailsDialog";
-import { getEvents } from "@/lib/api";
+import { getEvents, deleteEvent } from "@/lib/api";
+import { getCurrentUser } from "@/lib/auth";
 import type { AppEvent } from "@/lib/event-types";
 import type { EventRead } from "@/lib/types";
 import { toast } from "sonner";
@@ -79,6 +80,7 @@ function eventReadToAppEvent(e: EventRead): AppEvent {
     status: (e.status === "completed" ? "completed" : "upcoming") as AppEvent["status"],
     invitedCount: e.invited_employee_ids?.length ?? 0,
     seriesId: e.series_id ?? null,
+    organizerId: e.organizer_id,
   };
 }
 
@@ -88,6 +90,21 @@ function EventsPage() {
   const [selected, setSelected] = useState<AppEvent | null>(null);
   const [open, setOpen] = useState(false);
   const [toDelete, setToDelete] = useState<AppEvent | null>(null);
+
+  const user = getCurrentUser();
+  const queryClient = useQueryClient();
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteEvent,
+    onSuccess: () => {
+      toast.success("Event deleted");
+      setToDelete(null);
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || "Failed to delete event");
+    },
+  });
 
   const { data, isLoading } = useQuery({
     queryKey: ["events", status],
@@ -245,12 +262,14 @@ function EventsPage() {
                           <DropdownMenuItem onClick={() => view(e)}>
                             <Eye className="h-4 w-4 mr-2" /> View
                           </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-destructive"
-                            onClick={() => setToDelete(e)}
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" /> Delete
-                          </DropdownMenuItem>
+                          {user?.id === e.organizerId && (
+                            <DropdownMenuItem
+                              className="text-destructive"
+                              onClick={() => setToDelete(e)}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" /> Delete
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
@@ -277,11 +296,14 @@ function EventsPage() {
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => {
-                toast.success("Event deleted");
-                setToDelete(null);
+                if (toDelete) {
+                  const realId = parseInt(toDelete.id.replace('evt-', ''), 10);
+                  deleteMutation.mutate(realId);
+                }
               }}
+              disabled={deleteMutation.isPending}
             >
-              Delete
+              {deleteMutation.isPending ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

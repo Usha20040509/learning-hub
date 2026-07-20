@@ -181,7 +181,15 @@ function CreateEventPage() {
       navigate({ to: "/events" });
     } catch (err: any) {
       const msg = err?.message ?? "";
-      if (msg.includes("422")) toast.error("Invalid data — check times and organizer.");
+      if (msg.includes("409")) {
+        try {
+          const jsonStr = msg.split("409): ")[1];
+          const data = JSON.parse(jsonStr);
+          toast.error("Scheduling Clash", { description: data.detail || "Time overlap detected." });
+        } catch {
+          toast.error("Scheduling Clash", { description: "Time overlap detected with existing event." });
+        }
+      } else if (msg.includes("422")) toast.error("Invalid data — check times and organizer.");
       else if (msg.includes("404")) toast.error("Organizer or participant not found in the system.");
       else toast.error("Failed to create event. Is the backend running?");
     } finally {

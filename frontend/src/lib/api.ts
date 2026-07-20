@@ -163,6 +163,12 @@ export function login(data: { email: string }) {
   });
 }
 
+export function deleteEvent(eventId: number) {
+  return apiFetch<void>(`/events/${eventId}`, {
+    method: "DELETE",
+  });
+}
+
 export function getLeaderboard() {
   return apiFetch<DashboardLeaderboardResponse>("/dashboard/leaderboard");
 }
