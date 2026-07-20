@@ -113,9 +113,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
   };
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-app">
+    <div className="flex h-screen w-screen overflow-hidden bg-app">
       {/* Sidebar */}
-      <aside className={cn("hidden md:flex shrink-0 flex-col border-r border-border bg-sidebar transition-all duration-300", collapsed ? "w-[72px]" : "w-64")}>
+      <aside className={cn("hidden md:flex shrink-0 flex-col border-r border-border bg-sidebar transition-all duration-300 h-screen sticky top-0", collapsed ? "w-[72px]" : "w-64")}>
         <div className={cn("flex items-center h-16 border-b border-border transition-all duration-300", collapsed ? "justify-center px-0" : "gap-2 px-5")}>
           <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground shadow-soft">
             <GraduationCap className="h-5 w-5" />
@@ -159,7 +159,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
       </aside>
 
       {/* Main column */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
+      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto overflow-x-hidden">
         {/* Topbar */}
         <header className="h-16 border-b border-border bg-background sticky top-0 z-40">
           <div className="h-full px-4 md:px-6 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4">
@@ -302,7 +302,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
           </div>
         </div>
 
-        <main className="flex-1 p-4 md:p-8 max-w-[1400px] w-full mx-auto animate-fade-in">
+        <main className="flex-1 p-4 md:p-8 w-full max-w-[1400px] mx-auto animate-fade-in overflow-x-hidden">
           {children}
         </main>
       </div>
