@@ -28,7 +28,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { clearCurrentUser, getCurrentUser } from "@/lib/auth";
 import { cn } from "@/lib/utils";
-import { Search, Bell } from "lucide-react";
+import { Search, Bell, Check } from "lucide-react";
 
 const nav: { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean }[] = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, exact: true },
@@ -44,6 +44,14 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
+  const [dismissedNotifications, setDismissedNotifications] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem("dismissedNotifications");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const user = getCurrentUser();
   const authenticated = Boolean(user);
   const navItems = authenticated
@@ -92,8 +100,17 @@ export function AppLayout({ children }: { children: ReactNode }) {
       }
     });
 
-    return list;
-  }, [summary]);
+    return list.filter((n) => !dismissedNotifications.includes(n.id));
+  }, [summary, dismissedNotifications]);
+
+  const dismissNotification = (id: string) => {
+    setDismissedNotifications((prev) => {
+      if (prev.includes(id)) return prev;
+      const updated = [...prev, id];
+      localStorage.setItem("dismissedNotifications", JSON.stringify(updated));
+      return updated;
+    });
+  };
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-app">
@@ -173,12 +190,24 @@ export function AppLayout({ children }: { children: ReactNode }) {
                     ) : (
                       <div className="max-h-[300px] overflow-y-auto">
                         {notifications.map((n) => (
-                          <div key={n.id} className="flex flex-col items-start gap-1 p-3 border-b border-border/50 hover:bg-accent/50 transition-colors last:border-0">
+                          <div
+                            key={n.id}
+                            className="group relative flex flex-col items-start gap-1 p-3 border-b border-border/50 hover:bg-accent/50 transition-colors last:border-0 cursor-pointer"
+                            onClick={() => dismissNotification(n.id)}
+                          >
                             <div className="flex items-center gap-2 w-full">
                               <span className="text-xs font-bold text-primary">{n.title}</span>
-                              <span className="text-[10px] font-medium text-muted-foreground ml-auto whitespace-nowrap bg-muted px-1.5 py-0.5 rounded-sm">{n.time}</span>
+                              <span className="text-[10px] font-medium text-muted-foreground ml-auto whitespace-nowrap bg-muted px-1.5 py-0.5 rounded-sm group-hover:opacity-0 transition-opacity">
+                                {n.time}
+                              </span>
+                              <button
+                                className="absolute right-3 top-3 opacity-0 group-hover:opacity-100 transition-opacity text-primary hover:text-primary/80"
+                                aria-label="Mark as read"
+                              >
+                                <Check className="h-4 w-4" />
+                              </button>
                             </div>
-                            <span className="text-sm text-foreground leading-tight">{n.message}</span>
+                            <span className="text-sm text-foreground leading-tight pr-6">{n.message}</span>
                           </div>
                         ))}
                       </div>

@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getEmployees } from "@/lib/api";
 import type { EmployeeRead } from "@/lib/types";
@@ -25,6 +25,7 @@ export const Route = createFileRoute("/employees")({
 
 function EmployeesPage() {
   const [search, setSearch] = useState("");
+  const [deptSearch, setDeptSearch] = useState("");
   const [selectedDepts, setSelectedDepts] = useState<string[]>([]);
   const [activeOnly, setActiveOnly] = useState(false);
 
@@ -46,6 +47,10 @@ function EmployeesPage() {
     () => Array.from(new Set(employees.map((item) => item.department).filter(Boolean))) as string[],
     [employees],
   );
+
+  const filteredDepartments = useMemo(() => {
+    return departments.filter(d => d.toLowerCase().includes(deptSearch.toLowerCase()));
+  }, [departments, deptSearch]);
 
   return (
     <AppLayout>
@@ -77,20 +82,41 @@ function EmployeesPage() {
                 {selectedDepts.length > 0 ? `${selectedDepts.length} departments selected` : "All departments"}
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-[200px]">
-              {departments.map((dept) => (
+            <DropdownMenuContent align="start" className="w-[200px] p-0">
+              <div className="p-2">
+                <Input
+                  value={deptSearch}
+                  onChange={(e) => setDeptSearch(e.target.value)}
+                  onKeyDown={(e) => e.stopPropagation()}
+                  placeholder="Search"
+                  className="h-8 text-sm"
+                />
+              </div>
+              <DropdownMenuSeparator className="m-0" />
+              <div className="max-h-60 overflow-y-auto p-1 space-y-0.5">
                 <DropdownMenuCheckboxItem
-                  key={dept}
-                  checked={selectedDepts.includes(dept)}
+                  checked={selectedDepts.length === departments.length && departments.length > 0}
                   onCheckedChange={(checked) => {
-                    setSelectedDepts((prev) =>
-                      checked ? [...prev, dept] : prev.filter((d) => d !== dept)
-                    );
+                    setSelectedDepts(checked ? departments : []);
                   }}
+                  className="text-sm font-medium"
                 >
-                  {dept}
+                  (Select All)
                 </DropdownMenuCheckboxItem>
-              ))}
+                {filteredDepartments.map((dept) => (
+                  <DropdownMenuCheckboxItem
+                    key={dept}
+                    checked={selectedDepts.includes(dept)}
+                    onCheckedChange={(checked) => {
+                      setSelectedDepts((prev) =>
+                        checked ? [...prev, dept] : prev.filter((d) => d !== dept)
+                      );
+                    }}
+                  >
+                    {dept}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </div>
             </DropdownMenuContent>
           </DropdownMenu>
           <label className="inline-flex items-center gap-2 text-sm text-muted-foreground">
