@@ -181,11 +181,19 @@ class EventService:
         self.repository.db.refresh(item)
         return self._to_read(item)
 
-    def delete(self, event_id: int) -> None:
+    def delete(self, event_id: int, delete_series: bool = False) -> None:
         item = self.repository.get_by_id(event_id)
         if not item:
             raise APIException("Event not found", 404)
-        self.repository.delete(item)
+        
+        if delete_series and item.series_id:
+            # Delete all events in this series
+            from app.models.event import Event
+            events_in_series = self.repository.db.query(Event).filter(Event.series_id == item.series_id).all()
+            for event in events_in_series:
+                self.repository.delete(event)
+        else:
+            self.repository.delete(item)
 
     def upload_results(self, event_id: int, file_stream) -> None:
         import openpyxl

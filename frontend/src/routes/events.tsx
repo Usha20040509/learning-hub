@@ -95,7 +95,8 @@ function EventsPage() {
   const queryClient = useQueryClient();
 
   const deleteMutation = useMutation({
-    mutationFn: deleteEvent,
+    mutationFn: ({ id, delete_series }: { id: number; delete_series: boolean }) =>
+      deleteEvent(id, delete_series),
     onSuccess: () => {
       toast.success("Event deleted");
       setToDelete(null);
@@ -291,20 +292,47 @@ function EventsPage() {
               "{toDelete?.title}" will be permanently removed. This can't be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter className="sm:justify-between w-full">
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => {
-                if (toDelete) {
-                  const realId = parseInt(toDelete.id.replace('evt-', ''), 10);
-                  deleteMutation.mutate(realId);
-                }
-              }}
-              disabled={deleteMutation.isPending}
-            >
-              {deleteMutation.isPending ? "Deleting..." : "Delete"}
-            </AlertDialogAction>
+            <div className="flex flex-col sm:flex-row gap-2">
+              {toDelete?.seriesId ? (
+                <>
+                  <AlertDialogAction
+                    className="bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border"
+                    onClick={() => {
+                      const realId = parseInt(toDelete.id.replace('evt-', ''), 10);
+                      deleteMutation.mutate({ id: realId, delete_series: false });
+                    }}
+                    disabled={deleteMutation.isPending}
+                  >
+                    This event only
+                  </AlertDialogAction>
+                  <AlertDialogAction
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    onClick={() => {
+                      const realId = parseInt(toDelete.id.replace('evt-', ''), 10);
+                      deleteMutation.mutate({ id: realId, delete_series: true });
+                    }}
+                    disabled={deleteMutation.isPending}
+                  >
+                    Entire series
+                  </AlertDialogAction>
+                </>
+              ) : (
+                <AlertDialogAction
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  onClick={() => {
+                    if (toDelete) {
+                      const realId = parseInt(toDelete.id.replace('evt-', ''), 10);
+                      deleteMutation.mutate({ id: realId, delete_series: false });
+                    }
+                  }}
+                  disabled={deleteMutation.isPending}
+                >
+                  {deleteMutation.isPending ? "Deleting..." : "Delete"}
+                </AlertDialogAction>
+              )}
+            </div>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

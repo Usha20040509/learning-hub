@@ -47,8 +47,8 @@ def update_event(event_id: int, data: EventCreate, service: EventService = Depen
 
 
 @router.delete("/{event_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete event")
-def delete_event(event_id: int, service: EventService = Depends(get_event_service)) -> None:
-    service.delete(event_id)
+def delete_event(event_id: int, delete_series: bool = False, service: EventService = Depends(get_event_service)) -> None:
+    service.delete(event_id, delete_series=delete_series)
 
 
 @router.post("/{event_id}/upload-results", summary="Upload attendance/assignment Excel results")

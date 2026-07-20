@@ -38,7 +38,14 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
     throw new Error(`API request failed (${response.status}): ${text}`);
   }
 
-  return (await response.json()) as T;
+  if (response.status === 204) {
+    return null as any;
+  }
+  const text = await response.text();
+  if (!text) {
+    return null as any;
+  }
+  return JSON.parse(text) as T;
 }
 
 export function getEmployees(options: {
@@ -162,9 +169,9 @@ export function login(data: { email: string }) {
     body: JSON.stringify(data),
   });
 }
-
-export function deleteEvent(eventId: number) {
-  return apiFetch<void>(`/events/${eventId}`, {
+export function deleteEvent(eventId: number, delete_series: boolean = false) {
+  const query = delete_series ? "?delete_series=true" : "";
+  return apiFetch<void>(`/events/${eventId}${query}`, {
     method: "DELETE",
   });
 }
