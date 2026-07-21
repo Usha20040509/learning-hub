@@ -32,6 +32,11 @@ class EmployeeRepository(RepositoryBase[Employee]):
             query = query.filter(Employee.is_active == is_active)
         return query.order_by(Employee.id).all()
 
+    def delete_missing_employees(self, active_employee_codes: list[str]) -> int:
+        if not active_employee_codes:
+            return 0
+        return self.db.query(Employee).filter(Employee.employee_id.notin_(active_employee_codes)).delete(synchronize_session=False)
+
     def get_by_employee_code(self, employee_code: str) -> Employee | None:
         return self.db.query(Employee).filter(Employee.employee_id == employee_code).first()
 
@@ -91,6 +96,4 @@ class EmployeeRepository(RepositoryBase[Employee]):
             if sync_data.work_location is not None:
                 employee.work_location = sync_data.work_location
 
-        self.db.commit()
-        self.db.refresh(employee)
         return employee, is_created

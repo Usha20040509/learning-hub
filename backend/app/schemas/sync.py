@@ -20,3 +20,4 @@ class SyncResponse(BaseModel):
     created: int
     updated: int
     failed: int
+    deleted: int
