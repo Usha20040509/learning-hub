@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 
 from app.config.settings import settings
 from app.routers.dashboard import router as dashboard_router
@@ -22,6 +23,8 @@ app = FastAPI(title=settings.app_name, version="0.1.0", debug=settings.debug)
 #     allow_headers=["*"],
 # )
 
+app.add_middleware(GZipMiddleware, minimum_size=1000)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -31,6 +34,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    max_age=86400, # Cache preflight requests for 24 hours
 )
 
 register_exception_handlers(app)
