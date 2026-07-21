@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from sqlalchemy.orm import Session
 
 from app.models.employee import Employee
@@ -34,6 +35,26 @@ class EmployeeRepository(RepositoryBase[Employee]):
     def get_by_employee_code(self, employee_code: str) -> Employee | None:
         return self.db.query(Employee).filter(Employee.employee_id == employee_code).first()
 
+    def _parse_experience(self, exp: str | None) -> str | None:
+        if not exp:
+            return None
+        
+        exp = str(exp).strip()
+        years_match = re.search(r'(\d+)\s*year', exp, re.IGNORECASE)
+        months_match = re.search(r'(\d+)\s*month', exp, re.IGNORECASE)
+        
+        years = int(years_match.group(1)) if years_match else 0
+        months = int(months_match.group(1)) if months_match else 0
+        
+        if years == 0 and months == 0:
+            num_match = re.search(r'(\d+(\.\d+)?)', exp)
+            if num_match:
+                return num_match.group(1)
+            return exp
+            
+        total_years = years + (months / 12.0)
+        return f"{total_years:.1f}"
+
     def upsert_employee(self, sync_data: EmployeeSync) -> tuple[Employee, bool]:
         employee = self.get_by_employee_code(sync_data.employee_code)
         is_created = False
@@ -41,6 +62,8 @@ class EmployeeRepository(RepositoryBase[Employee]):
         name_parts = sync_data.employee_name.strip().split(" ", 1)
         first_name = name_parts[0]
         last_name = name_parts[1] if len(name_parts) > 1 else ""
+        
+        parsed_exp = self._parse_experience(sync_data.years_of_experience)
 
         if not employee:
             employee = Employee(
@@ -49,7 +72,7 @@ class EmployeeRepository(RepositoryBase[Employee]):
                 last_name=last_name,
                 email=sync_data.email,
                 job_title=sync_data.designation,
-                years_experience=str(sync_data.years_of_experience) if sync_data.years_of_experience is not None else None,
+                years_experience=parsed_exp,
                 group_name=sync_data.group,
                 work_location=sync_data.work_location,
             )
@@ -62,7 +85,7 @@ class EmployeeRepository(RepositoryBase[Employee]):
             if sync_data.designation is not None:
                 employee.job_title = sync_data.designation
             if sync_data.years_of_experience is not None:
-                employee.years_experience = str(sync_data.years_of_experience)
+                employee.years_experience = parsed_exp
             if sync_data.group is not None:
                 employee.group_name = sync_data.group
             if sync_data.work_location is not None:

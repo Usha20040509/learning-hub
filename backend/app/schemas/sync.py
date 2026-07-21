@@ -7,7 +7,7 @@ class EmployeeSync(BaseModel):
     email: str
 
     designation: str | None = None
-    years_of_experience: int | None = None
+    years_of_experience: str | None = None
     group: str | None = None
     work_location: str | None = None
 
