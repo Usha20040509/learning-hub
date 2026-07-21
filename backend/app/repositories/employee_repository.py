@@ -35,7 +35,12 @@ class EmployeeRepository(RepositoryBase[Employee]):
     def delete_missing_employees(self, active_employee_codes: list[str]) -> int:
         if not active_employee_codes:
             return 0
-        return self.db.query(Employee).filter(Employee.employee_id.notin_(active_employee_codes)).delete(synchronize_session=False)
+        from app.models.event import Event
+        employees_to_delete = self.db.query(Employee).filter(Employee.employee_id.notin_(active_employee_codes)).all()
+        for emp in employees_to_delete:
+            self.db.query(Event).filter(Event.organizer_id == emp.id).update({Event.organizer_id: None}, synchronize_session=False)
+            self.db.delete(emp)
+        return len(employees_to_delete)
 
     def get_by_employee_code(self, employee_code: str) -> Employee | None:
         return self.db.query(Employee).filter(Employee.employee_id == employee_code).first()

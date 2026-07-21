@@ -314,29 +314,28 @@ function EmployeesPage() {
               <TableRow className="bg-secondary/50 hover:bg-secondary/50">
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
-                <TableHead>Department</TableHead>
+                <TableHead>Employee ID</TableHead>
                 <TableHead>Role</TableHead>
-                <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading && (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center text-sm text-muted-foreground">
+                  <TableCell colSpan={4} className="h-24 text-center text-sm text-muted-foreground">
                     Loading employees...
                   </TableCell>
                 </TableRow>
               )}
               {isError && (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center text-sm text-destructive">
+                  <TableCell colSpan={4} className="h-24 text-center text-sm text-destructive">
                     Unable to load employees.
                   </TableCell>
                 </TableRow>
               )}
               {!isLoading && !isError && visibleEmployees.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center text-sm text-muted-foreground">
+                  <TableCell colSpan={4} className="h-24 text-center text-sm text-muted-foreground">
                     {hasFilters
                       ? "No employees match the selected filters."
                       : "No employees found."}
@@ -349,35 +348,10 @@ function EmployeesPage() {
                     {employee.first_name} {employee.last_name}
                   </TableCell>
                   <TableCell>{employee.email}</TableCell>
-                  <TableCell>
-                    {employee.department ? (
-                      <span
-                        className={cn(
-                          "inline-flex rounded-full px-2 py-0.5 text-xs font-medium",
-                          selectedDepts.includes(employee.department)
-                            ? "bg-primary/10 text-primary border border-primary/20"
-                            : "bg-secondary text-secondary-foreground",
-                        )}
-                      >
-                        {employee.department}
-                      </span>
-                    ) : (
-                      "—"
-                    )}
+                  <TableCell className="text-muted-foreground font-mono text-xs">
+                    {employee.employee_id}
                   </TableCell>
                   <TableCell>{employee.job_title ?? "—"}</TableCell>
-                  <TableCell>
-                    <span
-                      className={cn(
-                        "inline-flex rounded-full px-2 py-1 text-xs font-medium",
-                        employee.is_active
-                          ? "bg-emerald-100 text-emerald-800"
-                          : "bg-slate-100 text-slate-600",
-                      )}
-                    >
-                      {employee.is_active ? "Active" : "Inactive"}
-                    </span>
-                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

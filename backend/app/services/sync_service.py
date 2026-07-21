@@ -34,9 +34,7 @@ def sync_employees(db: Session, request: EmployeeSyncRequest) -> SyncResponse:
     except Exception as e:
         logger.error(f"Failed to commit bulk sync operation: {e}")
         db.rollback()
-        failed = len(request.employees)
-        created = 0
-        updated = 0
-        deleted = 0
+        from fastapi import HTTPException
+        raise HTTPException(status_code=500, detail=f"Database commit failed: {str(e)}")
 
     return SyncResponse(created=created, updated=updated, failed=failed, deleted=deleted)
