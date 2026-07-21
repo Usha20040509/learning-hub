@@ -121,15 +121,10 @@ function CalendarPage() {
       return (source ?? []).map((event) => {
         const isMine = myEventIds.has(event.id);
         // Color logic:
-        //   user's own event → solid primary (red) for training, solid emerald for workshop
+        //   user's own event → solid primary (red)
         //   other events → muted/faded version
-        const isWorkshop = event.event_type === "workshop";
-        const bg = isMine
-          ? isWorkshop ? "#10b981" : "#c8102e"
-          : isWorkshop ? "#6ee7b7" : "#fca5a5";
-        const border = isMine
-          ? isWorkshop ? "#059669" : "#9b0f24"
-          : isWorkshop ? "#34d399" : "#f87171";
+        const bg = isMine ? "#c8102e" : "#fca5a5";
+        const border = isMine ? "#9b0f24" : "#f87171";
 
         return {
           id: String(event.id),
@@ -163,7 +158,7 @@ function CalendarPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Calendar</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            View trainings and workshops.
+            View training sessions.
           </p>
         </div>
         <div className="flex flex-col items-end gap-3">
@@ -178,21 +173,11 @@ function CalendarPage() {
               <span className="h-2.5 w-2.5 rounded-full" style={{ background: "#c8102e" }} />
               My training
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-              My workshop
-            </div>
             {viewMode === "team" && (
-              <>
-                <div className="flex items-center gap-1.5">
-                  <span className="h-2.5 w-2.5 rounded-full bg-red-300" />
-                  Other training
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-200" />
-                  Other workshop
-                </div>
-              </>
+              <div className="flex items-center gap-1.5">
+                <span className="h-2.5 w-2.5 rounded-full bg-red-300" />
+                Other training
+              </div>
             )}
           </div>
         </div>

@@ -357,25 +357,6 @@ function DashboardPage() {
         </TabsContent>
 
         <TabsContent value="team-leaderboard" className="space-y-6 mt-0">
-          {/* All Company Upcoming events */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold text-foreground">All Upcoming Company Sessions</h2>
-              <span className="text-xs text-muted-foreground">Showing sessions for all employees</span>
-            </div>
-            {allUpcoming.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-border py-8 text-center text-sm text-muted-foreground">
-                No upcoming company sessions scheduled.
-              </div>
-            ) : (
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {allUpcoming.slice(0, 4).map((event) => (
-                  <EventCard key={event.id} event={event} onView={open} />
-                ))}
-              </div>
-            )}
-          </div>
-
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Table */}
             <div className="lg:col-span-2">
@@ -471,6 +452,25 @@ function DashboardPage() {
                 </div>
               </Card>
             </div>
+          </div>
+
+          {/* All Company Upcoming events */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold text-foreground">All Upcoming Company Sessions</h2>
+              <span className="text-xs text-muted-foreground">Showing sessions for all employees</span>
+            </div>
+            {allUpcoming.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-border py-8 text-center text-sm text-muted-foreground">
+                No upcoming company sessions scheduled.
+              </div>
+            ) : (
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {allUpcoming.slice(0, 4).map((event) => (
+                  <EventCard key={event.id} event={event} onView={open} />
+                ))}
+              </div>
+            )}
           </div>
         </TabsContent>
       </Tabs>
