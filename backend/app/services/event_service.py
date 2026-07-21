@@ -81,23 +81,24 @@ class EventService:
         new_participants = set(employee_ids)
         new_participants.add(data.organizer_id)
 
-        for p_start, p_end in proposed_times:
-            overlapping = self.repository.db.query(Event).filter(
-                Event.start_time < p_end,
-                Event.end_time > p_start
-            ).all()
+        if not data.ignore_clashes:
+            for p_start, p_end in proposed_times:
+                overlapping = self.repository.db.query(Event).filter(
+                    Event.start_time < p_end,
+                    Event.end_time > p_start
+                ).all()
 
-            for overlap_event in overlapping:
-                overlap_participants = {p.employee_id for p in overlap_event.participants}
-                if overlap_event.organizer_id:
-                    overlap_participants.add(overlap_event.organizer_id)
-                
-                clashing_people = new_participants.intersection(overlap_participants)
-                if clashing_people:
-                    clash_id = next(iter(clashing_people))
-                    emp = self.employee_repository.get_by_id(clash_id)
-                    name = f"{emp.first_name} {emp.last_name}" if emp else f"ID {clash_id}"
-                    raise APIException(f"Scheduling clash: {name} is already booked for '{overlap_event.title}' on {p_start.strftime('%b %d at %H:%M')}.", 409)
+                for overlap_event in overlapping:
+                    overlap_participants = {p.employee_id for p in overlap_event.participants}
+                    if overlap_event.organizer_id:
+                        overlap_participants.add(overlap_event.organizer_id)
+                    
+                    clashing_people = new_participants.intersection(overlap_participants)
+                    if clashing_people:
+                        clash_id = next(iter(clashing_people))
+                        emp = self.employee_repository.get_by_id(clash_id)
+                        name = f"{emp.first_name} {emp.last_name}" if emp else f"ID {clash_id}"
+                        raise APIException(f"Scheduling clash: {name} is already booked for '{overlap_event.title}' on {p_start.strftime('%b %d at %H:%M')}.", 409)
 
         if data.is_recurring and data.recurrence_until:
             current_start = data.start_time
@@ -175,8 +176,62 @@ class EventService:
         item = self.repository.get_by_id(event_id)
         if not item:
             raise APIException("Event not found", 404)
-        for field, value in data.model_dump().items():
+
+        update_data = data.model_dump(exclude={"invited_employee_ids", "invited_team_ids", "is_recurring", "recurrence_until", "recurrence_days", "ignore_clashes"})
+        for field, value in update_data.items():
             setattr(item, field, value)
+
+        employee_ids = set(data.invited_employee_ids)
+        team_ids = set(data.invited_team_ids)
+        for team_id in team_ids:
+            team = self.team_repository.get_by_id(team_id)
+            if not team:
+                raise APIException(f"Team {team_id} not found", 404)
+            team_members = [member.employee_id for member in team.members]
+            employee_ids.update(team_members)
+
+        for emp_id in employee_ids:
+            if not self.employee_repository.get_by_id(emp_id):
+                raise APIException(f"Employee {emp_id} not found", 404)
+
+        new_participants = set(employee_ids)
+        new_participants.add(data.organizer_id)
+
+        if not data.ignore_clashes:
+            overlapping = self.repository.db.query(Event).filter(
+                Event.id != event_id,
+                Event.start_time < data.end_time,
+                Event.end_time > data.start_time
+            ).all()
+
+            for overlap_event in overlapping:
+                overlap_participants = {p.employee_id for p in overlap_event.participants}
+                if overlap_event.organizer_id:
+                    overlap_participants.add(overlap_event.organizer_id)
+                
+                clashing_people = new_participants.intersection(overlap_participants)
+                if clashing_people:
+                    clash_id = next(iter(clashing_people))
+                    emp = self.employee_repository.get_by_id(clash_id)
+                    name = f"{emp.first_name} {emp.last_name}" if emp else f"ID {clash_id}"
+                    raise APIException(f"Scheduling clash: {name} is already booked for '{overlap_event.title}' on {data.start_time.strftime('%b %d at %H:%M')}.", 409)
+
+        existing_p = {p.employee_id: p for p in item.participants}
+        for emp_id in employee_ids:
+            if emp_id not in existing_p:
+                self.repository.db.add(EventParticipant(event_id=event_id, employee_id=emp_id, status="invited"))
+        for emp_id, p in existing_p.items():
+            if emp_id not in employee_ids:
+                self.repository.db.delete(p)
+
+        existing_t = {t.team_id: t for t in item.invited_teams}
+        for team_id in team_ids:
+            if team_id not in existing_t:
+                self.repository.db.add(EventTeam(event_id=event_id, team_id=team_id))
+        for team_id, t in existing_t.items():
+            if team_id not in team_ids:
+                self.repository.db.delete(t)
+
         self.repository.db.commit()
         self.repository.db.refresh(item)
         return self._to_read(item)

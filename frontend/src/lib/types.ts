@@ -77,6 +77,7 @@ export interface EventCreate {
   recurrence_until?: string | null;
   /** Days of week to repeat on: 0=Mon … 6=Sun. Empty = every day. */
   recurrence_days?: number[];
+  ignore_clashes?: boolean;
 }
 
 export interface DashboardSummary {

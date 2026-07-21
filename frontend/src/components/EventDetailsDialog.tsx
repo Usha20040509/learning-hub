@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { TypeBadge } from "@/components/layout/AppLayout";
+import { Link } from "@tanstack/react-router";
 import type { AppEvent } from "@/lib/event-types";
 import { getCurrentUser } from "@/lib/auth";
 import { uploadEventResults } from "@/lib/api";
@@ -147,6 +148,11 @@ export function EventDetailsDialog({
                   onClick={handleUpload}
                 >
                   {uploading ? "Uploading..." : "Upload Results"}
+                </Button>
+                <Button size="sm" variant="outline" asChild>
+                  <Link to="/edit-event/$eventId" params={{ eventId: event.id.replace("evt-", "") }}>
+                    Edit Event
+                  </Link>
                 </Button>
               </div>
             </div>

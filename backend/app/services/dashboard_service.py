@@ -23,8 +23,12 @@ class DashboardService:
         now = datetime.utcnow()
         upcoming = (
             self.db.query(Event)
-            .join(EventParticipant)
-            .filter(EventParticipant.employee_id == employee_id)
+            .filter(
+                or_(
+                    Event.participants.any(EventParticipant.employee_id == employee_id),
+                    Event.organizer_id == employee_id
+                )
+            )
             .filter(Event.start_time >= now)
             .order_by(Event.start_time.asc())
             .limit(5)
@@ -34,16 +38,24 @@ class DashboardService:
         today_end = today_start + timedelta(days=1)
         todays = (
             self.db.query(Event)
-            .join(EventParticipant)
-            .filter(EventParticipant.employee_id == employee_id)
+            .filter(
+                or_(
+                    Event.participants.any(EventParticipant.employee_id == employee_id),
+                    Event.organizer_id == employee_id
+                )
+            )
             .filter(and_(Event.start_time >= today_start, Event.start_time < today_end))
             .order_by(Event.start_time.asc())
             .all()
         )
         recent = (
             self.db.query(Event)
-            .join(EventParticipant)
-            .filter(EventParticipant.employee_id == employee_id)
+            .filter(
+                or_(
+                    Event.participants.any(EventParticipant.employee_id == employee_id),
+                    Event.organizer_id == employee_id
+                )
+            )
             .filter(Event.start_time < now)
             .order_by(Event.start_time.desc())
             .limit(5)
@@ -123,7 +135,12 @@ class DashboardService:
     def get_calendar(self, start_date: datetime, end_date: datetime, view: str, employee_id: int | None = None) -> CalendarResponse:
         query = self.db.query(Event)
         if employee_id is not None:
-            query = query.join(EventParticipant).filter(EventParticipant.employee_id == employee_id)
+            query = query.filter(
+                or_(
+                    Event.participants.any(EventParticipant.employee_id == employee_id),
+                    Event.organizer_id == employee_id
+                )
+            )
         query = query.filter(Event.start_time < end_date, Event.end_time > start_date)
         events = query.order_by(Event.start_time.asc()).all()
         payload = [self._to_calendar_event(event) for event in events]

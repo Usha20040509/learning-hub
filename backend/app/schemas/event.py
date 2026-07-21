@@ -21,6 +21,7 @@ class EventCreate(BaseModel):
     # Days of the week to repeat on: 0=Monday … 6=Sunday (ISO weekday - 1).
     # Empty list means every day (backwards-compatible with old "daily" behaviour).
     recurrence_days: list[int] = Field(default_factory=list)
+    ignore_clashes: bool = False
 
     @model_validator(mode="after")
     def validate_event_schedule(self) -> "EventCreate":

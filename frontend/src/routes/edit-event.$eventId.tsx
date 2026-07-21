@@ -12,20 +12,20 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { createEvent, getEmployees, getTeams } from "@/lib/api";
+import { getEvent, updateEvent, getEmployees, getTeams } from "@/lib/api";
 import { getCurrentUser } from "@/lib/auth";
 import type { EmployeeRead, TeamRead } from "@/lib/types";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/create-event")({
+export const Route = createFileRoute("/edit-event/$eventId")({
   head: () => ({
     meta: [
-      { title: "Create Event — Learning Hub" },
-      { name: "description", content: "Schedule a new training or workshop." },
+      { title: "Edit Event — Learning Hub" },
+      { name: "description", content: "Edit an existing session." },
     ],
   }),
-  component: CreateEventPage,
+  component: EditEventPage,
 });
 
 function EmployeeSelector({ employees, loading, selectedIds, onToggle }: {
@@ -61,9 +61,15 @@ function EmployeeSelector({ employees, loading, selectedIds, onToggle }: {
   );
 }
 
-function CreateEventPage() {
+function EditEventPage() {
+  const { eventId } = Route.useParams();
   const navigate = useNavigate();
   const currentUser = getCurrentUser();
+
+  const { data: eventToEdit, isLoading: eventLoading } = useQuery({
+    queryKey: ["event", eventId],
+    queryFn: () => getEvent(Number(eventId)),
+  });
 
   // form state
   const [type, setType] = useState("training");
@@ -89,6 +95,34 @@ function CreateEventPage() {
   const [recurrenceDays, setRecurrenceDays] = useState<number[]>([]);
   const [clashWarning, setClashWarning] = useState<string | null>(null);
   const [showConfirmation, setShowConfirmation] = useState(false);
+
+  useEffect(() => {
+    if (eventToEdit) {
+      setTitle(eventToEdit.title);
+      setDescription(eventToEdit.description ?? "");
+      setAssignmentIncluded(eventToEdit.assignment_included ?? false);
+      setOrganizerId(String(eventToEdit.organizer_id));
+      if (eventToEdit.start_time) {
+        setDate(eventToEdit.start_time.split("T")[0]);
+        setStart(eventToEdit.start_time.split("T")[1].substring(0, 5));
+      }
+      if (eventToEdit.end_time) {
+        setEnd(eventToEdit.end_time.split("T")[1].substring(0, 5));
+      }
+      setLocation(eventToEdit.location ?? "");
+      setMeetingLink(eventToEdit.meeting_link ?? "");
+      setSelectedEmployeeIds(eventToEdit.invited_employee_ids ?? []);
+      setSelectedTeamIds(eventToEdit.invited_team_ids ?? []);
+      
+      const hasEmps = (eventToEdit.invited_employee_ids ?? []).length > 0;
+      const hasTeams = (eventToEdit.invited_team_ids ?? []).length > 0;
+      if (hasEmps && hasTeams) setInviteType("both");
+      else if (hasTeams) setInviteType("team");
+      else setInviteType("individual");
+      
+      setIsRecurring(false); // Disable recurrence editing for single events
+    }
+  }, [eventToEdit]);
 
   const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -169,7 +203,7 @@ function CreateEventPage() {
 
     setSubmitting(true);
     try {
-      await createEvent({
+      await updateEvent(Number(eventId), {
         title: title.trim(),
         description: description.trim() || null,
         start_time: `${date}T${start}:00`,
@@ -187,7 +221,7 @@ function CreateEventPage() {
         recurrence_days: isRecurring ? recurrenceDays : [],
         ignore_clashes: ignoreClashes,
       });
-      toast.success("Event created!", { description: title });
+      toast.success("Event updated!", { description: title });
       navigate({ to: "/events" });
     } catch (err: any) {
       const msg = err?.message ?? "";
@@ -220,8 +254,8 @@ function CreateEventPage() {
   return (
     <AppLayout>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight">Create Event</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">Schedule a training or workshop and invite participants.</p>
+        <h1 className="text-2xl font-bold tracking-tight">Edit Event</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">Update the details of this session.</p>
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
@@ -437,7 +471,7 @@ function CreateEventPage() {
           <div className="flex gap-3 justify-end">
             <Button variant="ghost" onClick={() => submit(true)} disabled={submitting}>Save draft</Button>
             <Button variant="secondary" onClick={reset} disabled={submitting}>Reset</Button>
-            <Button onClick={() => handlePreSubmit()} disabled={submitting}>{submitting ? "Creating..." : "Create Event"}</Button>
+            <Button onClick={() => handlePreSubmit()} disabled={submitting}>{submitting ? "Updating..." : "Update Event"}</Button>
           </div>
         </div>
       </div>
@@ -459,7 +493,7 @@ function CreateEventPage() {
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Confirm Event Details</DialogTitle>
-            <DialogDescription>Please review the details before creating the event.</DialogDescription>
+            <DialogDescription>Please review the details before updating the event.</DialogDescription>
           </DialogHeader>
           <div className="space-y-3 my-4 text-sm bg-secondary/30 p-4 rounded-md">
             <div><span className="font-semibold text-muted-foreground">Title:</span> {title}</div>
@@ -480,7 +514,7 @@ function CreateEventPage() {
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setShowConfirmation(false)}>Back</Button>
             <Button onClick={() => { setShowConfirmation(false); submit(false); }} disabled={submitting}>
-              {submitting ? "Creating..." : "Confirm & Create"}
+              {submitting ? "Updating..." : "Confirm & Update"}
             </Button>
           </div>
         </DialogContent>

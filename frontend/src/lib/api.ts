@@ -163,6 +163,13 @@ export function createEvent(data: EventCreate) {
   });
 }
 
+export function updateEvent(eventId: number, data: EventCreate) {
+  return apiFetch<EventRead>(`/events/${eventId}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
 export function login(data: { email: string }) {
   return apiFetch<LoginResponse>("/auth/login", {
     method: "POST",
