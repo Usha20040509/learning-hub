@@ -128,18 +128,19 @@ class EventService:
                 saved = self.repository.add(event)
                 if not first_saved_event:
                     first_saved_event = saved
-                    participant_rows = [
-                        EventParticipant(event_id=saved.id, employee_id=emp_id)
-                        for emp_id in sorted(employee_ids)
-                    ]
-                    self.repository.db.add_all(participant_rows)
+                
+                participant_rows = [
+                    EventParticipant(event_id=saved.id, employee_id=emp_id)
+                    for emp_id in sorted(employee_ids)
+                ]
+                self.repository.db.add_all(participant_rows)
 
-                    team_rows = [
-                        EventTeam(event_id=saved.id, team_id=team_id)
-                        for team_id in sorted(team_ids)
-                    ]
-                    self.repository.db.add_all(team_rows)
-                    self.repository.db.commit()
+                team_rows = [
+                    EventTeam(event_id=saved.id, team_id=team_id)
+                    for team_id in sorted(team_ids)
+                ]
+                self.repository.db.add_all(team_rows)
+                self.repository.db.commit()
 
             return self._to_read(first_saved_event)
         else:
