@@ -1,8 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { format } from "date-fns";
-import { Copy, Eye, MoreHorizontal, Search, Trash2, Video } from "lucide-react";
+import { Copy, Eye, MoreHorizontal, Search, Trash2, Video, Pencil } from "lucide-react";
 import { AppLayout, TypeBadge } from "@/components/layout/AppLayout";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -90,6 +90,7 @@ function EventsPage() {
   const [selected, setSelected] = useState<AppEvent | null>(null);
   const [open, setOpen] = useState(false);
   const [toDelete, setToDelete] = useState<AppEvent | null>(null);
+  const navigate = useNavigate();
 
   const user = getCurrentUser();
   const queryClient = useQueryClient();
@@ -264,12 +265,17 @@ function EventsPage() {
                             <Eye className="h-4 w-4 mr-2" /> View
                           </DropdownMenuItem>
                           {user?.id === e.organizerId && (
-                            <DropdownMenuItem
-                              className="text-destructive"
-                              onClick={() => setToDelete(e)}
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" /> Delete
-                            </DropdownMenuItem>
+                            <>
+                              <DropdownMenuItem onClick={() => navigate({ to: "/edit-event/$eventId", params: { eventId: e.id.toString() } })}>
+                                <Pencil className="h-4 w-4 mr-2" /> Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="text-destructive"
+                                onClick={() => setToDelete(e)}
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" /> Delete
+                              </DropdownMenuItem>
+                            </>
                           )}
                         </DropdownMenuContent>
                       </DropdownMenu>

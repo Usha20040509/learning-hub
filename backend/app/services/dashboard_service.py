@@ -155,7 +155,12 @@ class DashboardService:
         date: datetime | None = None,
         team: str | None = None,
     ) -> MySessionsResponse:
-        query = self.db.query(Event).filter(Event.organizer_id == employee_id)
+        query = self.db.query(Event).filter(
+            or_(
+                Event.participants.any(EventParticipant.employee_id == employee_id),
+                Event.organizer_id == employee_id
+            )
+        )
 
         if training:
             query = query.filter(Event.title.ilike(f"%{training}%"))
