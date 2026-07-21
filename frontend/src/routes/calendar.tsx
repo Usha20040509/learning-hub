@@ -8,6 +8,7 @@ import interactionPlugin from "@fullcalendar/interaction";
 import type { EventClickArg } from "@fullcalendar/core";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EventDetailsDialog } from "@/components/EventDetailsDialog";
 import { getCalendarEvents, getEvent } from "@/lib/api";
 import { getCurrentUser } from "@/lib/auth";
@@ -81,6 +82,7 @@ function mapCalendarEventToAppEvent(event: any): AppEvent {
 function CalendarPage() {
   const [selected, setSelected] = useState<AppEvent | null>(null);
   const [open, setOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<"my" | "team">("my");
   const ref = useRef<FullCalendar>(null);
 
   const currentUser = getCurrentUser();
@@ -114,8 +116,9 @@ function CalendarPage() {
   );
 
   const fcEvents = useMemo(
-    () =>
-      (allData?.events ?? []).map((event) => {
+    () => {
+      const source = viewMode === "my" ? myData?.events : allData?.events;
+      return (source ?? []).map((event) => {
         const isMine = myEventIds.has(event.id);
         // Color logic:
         //   user's own event → solid primary (red) for training, solid emerald for workshop
@@ -138,8 +141,9 @@ function CalendarPage() {
           textColor: isMine ? "#ffffff" : "#374151",
           extendedProps: { event, isMine },
         };
-      }),
-    [allData, myEventIds],
+      });
+    },
+    [allData, myData, myEventIds, viewMode],
   );
 
   const handleClick = async (info: EventClickArg) => {
@@ -159,25 +163,37 @@ function CalendarPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Calendar</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            All team trainings and workshops. Your sessions are highlighted.
+            View trainings and workshops.
           </p>
         </div>
-        <div className="flex items-center gap-4 text-xs text-muted-foreground">
-          <div className="flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-full" style={{ background: "#c8102e" }} />
-            My training
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-            My workshop
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-full bg-red-300" />
-            Other training
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-full bg-emerald-200" />
-            Other workshop
+        <div className="flex flex-col items-end gap-3">
+          <Tabs defaultValue="my" value={viewMode} onValueChange={(v) => setViewMode(v as any)}>
+            <TabsList>
+              <TabsTrigger value="my">My View</TabsTrigger>
+              <TabsTrigger value="team">Team View</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-full" style={{ background: "#c8102e" }} />
+              My training
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+              My workshop
+            </div>
+            {viewMode === "team" && (
+              <>
+                <div className="flex items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 rounded-full bg-red-300" />
+                  Other training
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-200" />
+                  Other workshop
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
