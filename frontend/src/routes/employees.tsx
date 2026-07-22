@@ -53,10 +53,10 @@ function EmployeesPage() {
 
   const allEmployees = data?.items ?? [];
 
-  // Derive full stable department list from all fetched employees
+  // Derive full stable department/role list from all fetched employees
   const allDepartments = useMemo(
     () =>
-      Array.from(new Set(allEmployees.map((e) => e.department).filter(Boolean)))
+      Array.from(new Set(allEmployees.flatMap((e) => [e.department, e.job_title]).filter(Boolean)))
         .sort() as string[],
     [allEmployees],
   );
@@ -69,12 +69,13 @@ function EmployeesPage() {
     );
   }, [allDepartments, deptSearch]);
 
-  // Apply all client-side filters: dept multi-select
+  // Apply all client-side filters: dept/role multi-select
   const visibleEmployees = useMemo(() => {
     return allEmployees.filter((emp) => {
       const deptMatch =
         selectedDepts.length === 0 ||
-        (emp.department != null && selectedDepts.includes(emp.department));
+        (emp.department != null && selectedDepts.includes(emp.department)) ||
+        (emp.job_title != null && selectedDepts.includes(emp.job_title));
       return deptMatch;
     });
   }, [allEmployees, selectedDepts]);
@@ -125,7 +126,7 @@ function EmployeesPage() {
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by name, email, or department..."
+              placeholder="Search by name, email, department, or role..."
               className="pl-9"
             />
           </div>
@@ -147,8 +148,8 @@ function EmployeesPage() {
                 <Filter className="h-4 w-4 shrink-0" />
                 <span className="truncate">
                   {selectedDepts.length > 0
-                    ? `${selectedDepts.length} dept${selectedDepts.length > 1 ? "s" : ""} selected`
-                    : "All departments"}
+                    ? `${selectedDepts.length} selected`
+                    : "All departments & roles"}
                 </span>
               </span>
               <ChevronDown
@@ -171,7 +172,7 @@ function EmployeesPage() {
                     value={deptSearch}
                     onChange={(e) => setDeptSearch(e.target.value)}
                     onKeyDown={(e) => e.stopPropagation()}
-                    placeholder="Search departments..."
+                    placeholder="Search departments & roles..."
                     className="h-8 text-sm"
                     autoFocus
                   />

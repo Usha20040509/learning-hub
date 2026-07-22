@@ -1,7 +1,10 @@
 import logging
+import re
 from sqlalchemy.orm import Session
 from app.repositories.employee_repository import EmployeeRepository
 from app.schemas.sync import EmployeeSyncRequest, SyncResponse
+from app.models.team import Team
+from app.models.team_member import TeamMember
 
 logger = logging.getLogger(__name__)
 
@@ -17,8 +20,24 @@ def sync_employees(db: Session, request: EmployeeSyncRequest) -> SyncResponse:
 
     for employee_data in request.employees:
         try:
-            _, is_created = repo.upsert_employee(employee_data)
+            employee, is_created = repo.upsert_employee(employee_data)
             active_employee_codes.append(employee_data.employee_code)
+            
+            if employee.job_title:
+                team_name = employee.job_title.strip()
+                if team_name:
+                    team = db.query(Team).filter(Team.name == team_name).first()
+                    if not team:
+                        code_name = re.sub(r'[^a-zA-Z0-9]', '', team_name).lower()
+                        team = Team(team_code=code_name, name=team_name, description=f"Team for {team_name}")
+                        db.add(team)
+                        db.flush()
+                    
+                    member = db.query(TeamMember).filter(TeamMember.team_id == team.id, TeamMember.employee_id == employee.id).first()
+                    if not member:
+                        member = TeamMember(team_id=team.id, employee_id=employee.id, role="Member")
+                        db.add(member)
+
             if is_created:
                 created += 1
             else:
