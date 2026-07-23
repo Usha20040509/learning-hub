@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { login } from "@/lib/api";
 import { setCurrentUser } from "@/lib/auth";
-import { signInWithGoogle } from "@/lib/firebase";
+import { sendMagicLink, isMagicLinkUrl, completeMagicLinkSignIn } from "@/lib/firebase";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -18,38 +20,48 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
+type Stage = "enter-email" | "link-sent" | "completing";
+
 function LoginPage() {
+  const [email, setEmail] = useState("");
+  const [stage, setStage] = useState<Stage>("enter-email");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleGoogleSignIn = async () => {
+  // On mount: check if the current URL is a Firebase magic link and auto-complete sign-in
+  useEffect(() => {
+    if (!isMagicLinkUrl()) return;
+
+    setStage("completing");
+
+    completeMagicLinkSignIn()
+      .then(async ({ idToken }) => {
+        const user = await login({ id_token: idToken });
+        setCurrentUser(user);
+        toast.success(`Welcome, ${user.first_name}!`);
+        navigate({ to: "/" });
+      })
+      .catch((err: any) => {
+        const msg: string = err?.message ?? "";
+        if (msg.includes("401")) {
+          toast.error("Access denied. Please use your company email address.");
+        } else {
+          toast.error("Sign-in failed. The link may have expired — please request a new one.");
+        }
+        setStage("enter-email");
+      });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleSendLink = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!email.trim()) return;
+
     setLoading(true);
     try {
-      // 1. Sign in with Google via Firebase (opens popup)
-      const { idToken } = await signInWithGoogle();
-
-      // 2. Send the Firebase ID token to our backend for verification + employee lookup
-      const user = await login({ id_token: idToken });
-
-      // 3. Store the returned employee profile in session storage
-      setCurrentUser(user);
-      toast.success(`Welcome, ${user.first_name}!`);
-      navigate({ to: "/" });
-    } catch (error: any) {
-      // Firebase popup dismissed by the user — silently ignore
-      if (error?.code === "auth/popup-closed-by-user" || error?.code === "auth/cancelled-popup-request") {
-        setLoading(false);
-        return;
-      }
-
-      const msg: string = error?.message ?? "";
-      if (msg.includes("401")) {
-        toast.error("Access denied. Please use your company (@maqsoftware.com) email address.");
-      } else if (msg.includes("popup")) {
-        toast.error("The sign-in popup was blocked. Please allow pop-ups for this site and try again.");
-      } else {
-        toast.error(msg || "Sign-in failed. Please try again.");
-      }
+      await sendMagicLink(email.trim().toLowerCase());
+      setStage("link-sent");
+    } catch (err: any) {
+      toast.error(err?.message ?? "Failed to send the sign-in link. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -59,56 +71,101 @@ function LoginPage() {
     <AppLayout>
       <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center px-4 py-8">
         <Card className="w-full max-w-md p-8 space-y-6">
-          <div>
-            <h1 className="text-3xl font-semibold">Welcome to Learning Hub</h1>
-            <p className="text-sm text-muted-foreground mt-2">
-              Sign in with your MAQ Software Google account to continue.
-            </p>
-          </div>
 
-          <Button
-            id="google-signin-btn"
-            type="button"
-            className="w-full flex items-center justify-center gap-3"
-            onClick={handleGoogleSignIn}
-            disabled={loading}
-          >
-            {loading ? (
-              "Signing in…"
-            ) : (
-              <>
-                {/* Google "G" logo */}
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 48 48"
-                  width="20"
-                  height="20"
+          {/* ── Completing sign-in (URL contains OOB code) ── */}
+          {stage === "completing" && (
+            <div className="text-center space-y-3">
+              <h1 className="text-2xl font-semibold">Signing you in…</h1>
+              <p className="text-sm text-muted-foreground">
+                Verifying your sign-in link, please wait.
+              </p>
+              <div className="flex justify-center pt-2">
+                <span className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              </div>
+            </div>
+          )}
+
+          {/* ── Email entry form ── */}
+          {stage === "enter-email" && (
+            <>
+              <div>
+                <h1 className="text-3xl font-semibold">Welcome to Learning Hub</h1>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Enter your company email and we'll send you a sign-in link.
+                </p>
+              </div>
+
+              <form className="space-y-4" onSubmit={handleSendLink}>
+                <div>
+                  <Label htmlFor="email">Company Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="you@maqsoftware.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    autoComplete="email"
+                    required
+                    autoFocus
+                  />
+                </div>
+                <Button
+                  id="send-link-btn"
+                  type="submit"
+                  className="w-full"
+                  disabled={loading}
                 >
-                  <path
-                    fill="#FFC107"
-                    d="M43.6 20.1H42V20H24v8h11.3C33.7 32.9 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 7.9 3l5.7-5.7C34 6.5 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.9z"
-                  />
-                  <path
-                    fill="#FF3D00"
-                    d="m6.3 14.7 6.6 4.8C14.7 16.1 19 13 24 13c3.1 0 5.8 1.1 7.9 3l5.7-5.7C34 6.5 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"
-                  />
-                  <path
-                    fill="#4CAF50"
-                    d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.4 35.4 26.8 36 24 36c-5.2 0-9.6-3-11.4-7.4L6 33.8C9.3 39.7 16.2 44 24 44z"
-                  />
-                  <path
-                    fill="#1976D2"
-                    d="M43.6 20.1H42V20H24v8h11.3c-.8 2.3-2.3 4.3-4.3 5.7l6.2 5.2C37 39.3 44 34.3 44 24c0-1.3-.1-2.7-.4-3.9z"
-                  />
-                </svg>
-                Sign in with Google
-              </>
-            )}
-          </Button>
+                  {loading ? "Sending…" : "Send sign-in link"}
+                </Button>
+              </form>
 
-          <p className="text-xs text-muted-foreground text-center">
-            Access is restricted to active MAQ Software employees.
-          </p>
+              <p className="text-xs text-muted-foreground text-center">
+                Access is restricted to active MAQ Software employees.
+              </p>
+            </>
+          )}
+
+          {/* ── Link sent confirmation ── */}
+          {stage === "link-sent" && (
+            <div className="text-center space-y-4">
+              {/* Mail icon */}
+              <div className="flex justify-center">
+                <div className="rounded-full bg-primary/10 p-4">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-8 w-8 text-primary"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={1.5}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"
+                    />
+                  </svg>
+                </div>
+              </div>
+
+              <h1 className="text-2xl font-semibold">Check your inbox</h1>
+              <p className="text-sm text-muted-foreground">
+                We sent a sign-in link to <span className="font-medium text-foreground">{email}</span>.
+                Click the link in the email to sign in.
+              </p>
+              <p className="text-xs text-muted-foreground">
+                The link expires in 1 hour. Didn't receive it?{" "}
+                <button
+                  type="button"
+                  className="underline underline-offset-2 hover:text-foreground transition-colors"
+                  onClick={() => setStage("enter-email")}
+                >
+                  Try again
+                </button>
+              </p>
+            </div>
+          )}
+
         </Card>
       </div>
     </AppLayout>
