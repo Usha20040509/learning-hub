@@ -1,20 +1,35 @@
 """Firebase Admin SDK initialisation and token verification."""
 
+import json
 import os
+
 import firebase_admin
 from firebase_admin import auth, credentials
 
-# Resolve the path to the service account file relative to this file's location
-_SERVICE_ACCOUNT_PATH = os.path.join(
-    os.path.dirname(__file__),  # app/utils/
-    "..",  # app/
-    "..",  # backend/
-    "firebase-service-account.json",
-)
+# ---------------------------------------------------------------------------
+# Initialise Firebase Admin — prefer env-var (production/Render), fall back
+# to the local service-account JSON file (local development).
+# ---------------------------------------------------------------------------
 
-# Initialise the Firebase Admin app only once
 if not firebase_admin._apps:
-    _cred = credentials.Certificate(os.path.abspath(_SERVICE_ACCOUNT_PATH))
+    _sa_json_str = os.environ.get("FIREBASE_SERVICE_ACCOUNT_JSON")
+
+    if _sa_json_str:
+        # Production: credentials supplied as a JSON string in an env variable
+        _sa_dict = json.loads(_sa_json_str)
+        _cred = credentials.Certificate(_sa_dict)
+    else:
+        # Local dev: read from the JSON file in the project root
+        _service_account_path = os.path.abspath(
+            os.path.join(
+                os.path.dirname(__file__),  # app/utils/
+                "..",  # app/
+                "..",  # backend/
+                "firebase-service-account.json",
+            )
+        )
+        _cred = credentials.Certificate(_service_account_path)
+
     firebase_admin.initialize_app(_cred)
 
 
