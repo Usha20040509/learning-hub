@@ -15,14 +15,20 @@ def sync_employees(db: Session, request: EmployeeSyncRequest) -> SyncResponse:
     updated = 0
     failed = 0
     deleted = 0
-    
+
     active_employee_codes = []
 
     for employee_data in request.employees:
         try:
             employee, is_created = repo.upsert_employee(employee_data)
+
+            # Flush immediately so the employee gets a DB-assigned id before
+            # we try to use it in TeamMember.  Without this flush, employee.id
+            # is None for newly-created rows, causing NotNullViolation.
+            db.flush()
+
             active_employee_codes.append(employee_data.employee_code)
-            
+
             if employee.job_title:
                 team_name = employee.job_title.strip()
                 if team_name:
@@ -31,19 +37,26 @@ def sync_employees(db: Session, request: EmployeeSyncRequest) -> SyncResponse:
                         code_name = re.sub(r'[^a-zA-Z0-9]', '', team_name).lower()
                         team = Team(team_code=code_name, name=team_name, description=f"Team for {team_name}")
                         db.add(team)
-                        db.flush()
-                    
-                    member = db.query(TeamMember).filter(TeamMember.team_id == team.id, TeamMember.employee_id == employee.id).first()
+                        db.flush()  # resolve team.id before using it
+
+                    member = db.query(TeamMember).filter(
+                        TeamMember.team_id == team.id,
+                        TeamMember.employee_id == employee.id,
+                    ).first()
                     if not member:
-                        member = TeamMember(team_id=team.id, employee_id=employee.id, role="Member")
-                        db.add(member)
+                        db.add(TeamMember(team_id=team.id, employee_id=employee.id, role="Member"))
 
             if is_created:
                 created += 1
             else:
                 updated += 1
+
         except Exception as e:
-            logger.error(f"Failed to parse or add employee {employee_data.employee_code} to session: {e}")
+            # Roll back only the current employee's work via a savepoint so the
+            # rest of the batch is not affected.
+            logger.error(
+                f"Failed to process employee {employee_data.employee_code}: {e}"
+            )
             db.rollback()
             failed += 1
 
