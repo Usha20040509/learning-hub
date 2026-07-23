@@ -67,6 +67,9 @@ class EmployeeRepository(RepositoryBase[Employee]):
 
     def upsert_employee(self, sync_data: EmployeeSync) -> tuple[Employee, bool]:
         employee = self.get_by_employee_code(sync_data.employee_code)
+        if not employee and sync_data.email:
+            employee = self.get_by_email(sync_data.email)
+            
         is_created = False
 
         name_parts = sync_data.employee_name.strip().split(" ", 1)
@@ -89,6 +92,7 @@ class EmployeeRepository(RepositoryBase[Employee]):
             self.db.add(employee)
             is_created = True
         else:
+            employee.employee_id = sync_data.employee_code
             employee.first_name = first_name
             employee.last_name = last_name
             employee.email = sync_data.email

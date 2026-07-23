@@ -1,3 +1,5 @@
+import { signOutFirebase } from "@/lib/firebase";
+
 export interface AuthUser {
   id: number;
   employee_id: string;
@@ -30,11 +32,23 @@ export function setCurrentUser(user: AuthUser) {
   sessionStorage.setItem(STORAGE_KEY, JSON.stringify(user));
 }
 
-export function clearCurrentUser() {
+export async function clearCurrentUser() {
   if (typeof window === "undefined") return;
   sessionStorage.removeItem(STORAGE_KEY);
+  // Also sign out of Firebase so the Google session is fully terminated
+  await signOutFirebase().catch(() => {});
 }
 
 export function isAuthenticated() {
   return getCurrentUser() !== null;
+}
+
+export function isManagerWithEditAccess(user: AuthUser | null): boolean {
+  if (!user) return false;
+  if (user.first_name?.toLowerCase() === "vimal") return true;
+
+  const title = user.job_title?.toLowerCase() || "";
+  if (title.includes("associate") || title.includes("assistant")) return false;
+
+  return title.includes("senior project manager") || title.includes("technical project manager");
 }

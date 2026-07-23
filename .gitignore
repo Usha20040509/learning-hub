@@ -19,6 +19,9 @@ Thumbs.db
 .env.bak
 venv.bak/
 
+# Firebase service account (contains private key — never commit)
+backend/firebase-service-account.json
+
 # Backend (Python / FastAPI)
 backend/__pycache__/
 backend/venv/

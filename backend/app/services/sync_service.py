@@ -44,6 +44,7 @@ def sync_employees(db: Session, request: EmployeeSyncRequest) -> SyncResponse:
                 updated += 1
         except Exception as e:
             logger.error(f"Failed to parse or add employee {employee_data.employee_code} to session: {e}")
+            db.rollback()
             failed += 1
 
     try:

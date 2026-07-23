@@ -253,8 +253,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
-                      onSelect={() => {
-                        clearCurrentUser();
+                      onSelect={async () => {
+                        await clearCurrentUser();
                         navigate({ to: "/login" });
                       }}
                     >

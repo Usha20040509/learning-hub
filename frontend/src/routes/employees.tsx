@@ -49,6 +49,7 @@ function EmployeesPage() {
         search: search || undefined,
       }),
     keepPreviousData: true,
+    refetchInterval: 10000,
   });
 
   const allEmployees = data?.items ?? [];

@@ -8,3 +8,4 @@ pydantic-settings==2.4.0
 psycopg2-binary==2.9.10
 python-multipart==0.0.20
 openpyxl
+firebase-admin==6.5.0

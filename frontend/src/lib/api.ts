@@ -170,7 +170,7 @@ export function updateEvent(eventId: number, data: EventCreate) {
   });
 }
 
-export function login(data: { email: string }) {
+export function login(data: { id_token: string }) {
   return apiFetch<LoginResponse>("/auth/login", {
     method: "POST",
     body: JSON.stringify(data),

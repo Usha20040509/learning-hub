@@ -14,7 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { TypeBadge } from "@/components/layout/AppLayout";
 import { Link } from "@tanstack/react-router";
 import type { AppEvent } from "@/lib/event-types";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, isManagerWithEditAccess } from "@/lib/auth";
 import { uploadEventResults } from "@/lib/api";
 import { toast } from "sonner";
 
@@ -33,7 +33,7 @@ export function EventDetailsDialog({
   if (!event) return null;
 
   const currentUser = getCurrentUser();
-  const isOrganizer = currentUser && event.organizerId === currentUser.id;
+  const isOrganizer = currentUser && (event.organizerId === currentUser.id || isManagerWithEditAccess(currentUser));
   const hasMeetingLink = Boolean(event.meetingLink?.trim());
 
   const handleUpload = async () => {

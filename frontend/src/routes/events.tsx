@@ -41,7 +41,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { EventDetailsDialog } from "@/components/EventDetailsDialog";
 import { getEvents, deleteEvent } from "@/lib/api";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, isManagerWithEditAccess } from "@/lib/auth";
 import type { AppEvent } from "@/lib/event-types";
 import type { EventRead } from "@/lib/types";
 import { toast } from "sonner";
@@ -264,7 +264,7 @@ function EventsPage() {
                           <DropdownMenuItem onClick={() => view(e)}>
                             <Eye className="h-4 w-4 mr-2" /> View
                           </DropdownMenuItem>
-                          {user?.id === e.organizerId && (
+                          {((user?.id === e.organizerId) || isManagerWithEditAccess(user)) && (
                             <>
                               <DropdownMenuItem onClick={() => navigate({ to: "/edit-event/$eventId", params: { eventId: e.id.toString() } })}>
                                 <Pencil className="h-4 w-4 mr-2" /> Edit
