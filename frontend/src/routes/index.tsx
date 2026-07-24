@@ -156,6 +156,17 @@ function DashboardPage() {
       .map(eventReadToAppEvent);
   }, [allEventsData?.items]);
 
+  const sortedLeaderboard = useMemo(() => {
+    const raw = [...(leaderboardData?.leaderboard ?? [])];
+    return raw.sort((a, b) => {
+      const attA = parseInt(a.attendance.replace("%", ""), 10) || 0;
+      const attB = parseInt(b.attendance.replace("%", ""), 10) || 0;
+      if (attA !== attB) return attB - attA;
+      if (a.assignments !== b.assignments) return b.assignments - a.assignments;
+      return a.employee.localeCompare(b.employee);
+    });
+  }, [leaderboardData?.leaderboard]);
+
   const open = async (event: AppEvent) => {
     try {
       const numericId = Number(event.id.replace("evt-", ""));
@@ -372,6 +383,7 @@ function DashboardPage() {
                   <table className="w-full text-sm text-left border-collapse">
                     <thead>
                       <tr className="border-b border-border/60 text-muted-foreground text-xs uppercase tracking-wider font-semibold">
+                        <th className="py-2.5 px-3 w-8 text-center">#</th>
                         <th className="py-2.5 px-3">Employee</th>
                         <th className="py-2.5 px-3 text-center">Attendance</th>
                         <th className="py-2.5 px-3 text-center">Sessions Attended</th>
@@ -379,14 +391,25 @@ function DashboardPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {(leaderboardData?.leaderboard ?? []).slice(0, 10).map((row) => (
-                        <tr key={row.employee} className="border-b border-border/40 hover:bg-secondary/15 transition-colors font-medium">
-                          <td className="py-3 px-3 text-foreground">{row.employee}</td>
+                      {sortedLeaderboard.slice(0, 10).map((row, idx) => {
+                        const isCurrentUser = currentUser && row.employee === `${currentUser.first_name} ${currentUser.last_name}`;
+                        return (
+                        <tr key={row.employee} className={cn("border-b border-border/40 transition-colors font-medium", isCurrentUser ? "bg-red-50/50 hover:bg-red-50/80" : "hover:bg-secondary/15")}>
+                          <td className="py-3 px-3 text-center text-xs text-muted-foreground font-bold">{idx + 1}</td>
+                          <td className="py-3 px-3 text-foreground">
+                            <div className="flex items-center gap-2">
+                              {row.employee}
+                              {isCurrentUser && (
+                                <Badge className="h-5 px-1.5 text-[10px] bg-red-100 hover:bg-red-200 text-red-700 border-red-200" variant="outline">You</Badge>
+                              )}
+                            </div>
+                          </td>
                           <td className="py-3 px-3 text-center">{row.attendance}</td>
-                          <td className="py-3 px-3 text-center font-bold text-primary">{row.sessions_attended}</td>
+                          <td className="py-3 px-3 text-center">{row.sessions_attended}</td>
                           <td className="py-3 px-3 text-center">{row.assignments}</td>
                         </tr>
-                      ))}
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -402,7 +425,7 @@ function DashboardPage() {
                   <span className="text-xs text-muted-foreground">This Month</span>
                 </div>
                 <div className="space-y-3.5">
-                  {(leaderboardData?.leaderboard ?? []).slice(0, 5).map((row, idx) => {
+                  {sortedLeaderboard.slice(0, 5).map((row, idx) => {
                     const percentage = parseInt(row.attendance.replace("%", ""), 10) || 0;
                     const color = getEmployeeColor(idx);
                     return (
@@ -430,7 +453,7 @@ function DashboardPage() {
                   <span className="text-xs text-muted-foreground">This Month</span>
                 </div>
                 <div className="space-y-3.5">
-                  {(leaderboardData?.leaderboard ?? []).slice(0, 5).map((row, idx) => {
+                  {sortedLeaderboard.slice(0, 5).map((row, idx) => {
                     const maxAssignments = Math.max(...(leaderboardData?.leaderboard ?? []).map(r => r.assignments), 50);
                     const barPercentage = Math.round((row.assignments / maxAssignments) * 100) || 0;
                     const color = getEmployeeColor(idx);
@@ -521,20 +544,30 @@ function DashboardPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {(leaderboardData?.leaderboard ?? []).map((row, idx) => (
+                  {sortedLeaderboard.map((row, idx) => {
+                    const isCurrentUser = currentUser && row.employee === `${currentUser.first_name} ${currentUser.last_name}`;
+                    return (
                     <tr
                       key={row.employee}
-                      className="border-b border-border/40 hover:bg-secondary/15 transition-colors font-medium"
+                      className={cn("border-b border-border/40 transition-colors font-medium", isCurrentUser ? "bg-red-50/50 hover:bg-red-50/80" : "hover:bg-secondary/15")}
                     >
                       <td className="py-3 px-2 text-center text-xs text-muted-foreground font-bold">
                         {idx + 1}
                       </td>
-                      <td className="py-3 px-3 text-foreground">{row.employee}</td>
+                      <td className="py-3 px-3 text-foreground">
+                        <div className="flex items-center gap-2">
+                          {row.employee}
+                          {isCurrentUser && (
+                            <Badge className="h-5 px-1.5 text-[10px] bg-red-100 hover:bg-red-200 text-red-700 border-red-200" variant="outline">You</Badge>
+                          )}
+                        </div>
+                      </td>
                       <td className="py-3 px-3 text-center">{row.attendance}</td>
-                      <td className="py-3 px-3 text-center font-bold text-primary">{row.sessions_attended}</td>
+                      <td className="py-3 px-3 text-center">{row.sessions_attended}</td>
                       <td className="py-3 px-3 text-center">{row.assignments}</td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

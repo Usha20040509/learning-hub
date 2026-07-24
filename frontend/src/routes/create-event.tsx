@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { Paperclip, X, Check, ChevronsUpDown, Search } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card } from "@/components/ui/card";
@@ -42,18 +42,18 @@ function EmployeeSelector({ employees, loading, selectedIds, onToggle }: {
   });
 
   return (
-    <div>
-      <div className="mb-2 flex items-center gap-2">
-        <Search className="w-4 h-4 text-muted-foreground" />
-        <Input placeholder="Filter employees..." value={q} onChange={(e) => setQ(e.target.value)} />
+    <div className="flex flex-col gap-2">
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input placeholder="Filter employees..." value={q} onChange={(e) => setQ(e.target.value)} className="pl-9" />
       </div>
-      <div className="space-y-1">
+      <div className="space-y-1 max-h-60 overflow-y-auto p-1">
         {loading && <div className="text-sm text-muted-foreground">Loading...</div>}
         {!loading && list.length === 0 && <div className="text-sm text-muted-foreground">No employees found.</div>}
         {!loading && list.map((emp) => (
-          <label key={emp.id} className="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" checked={selectedIds.includes(emp.id)} onChange={() => onToggle(emp.id)} />
-            <div className="text-sm">{emp.first_name} {emp.last_name} — {emp.email}</div>
+          <label key={emp.id} className="flex items-center gap-2 cursor-pointer p-1 hover:bg-secondary/20 rounded-md">
+            <input type="checkbox" checked={selectedIds.includes(emp.id)} onChange={() => onToggle(emp.id)} className="rounded border-border text-primary focus:ring-primary" />
+            <div className="text-sm">{emp.first_name} {emp.last_name} — <span className="text-muted-foreground text-xs">{emp.email}</span></div>
           </label>
         ))}
       </div>
@@ -97,13 +97,15 @@ function CreateEventPage() {
       cur.includes(day) ? cur.filter((d) => d !== day) : [...cur, day]
     );
 
-  // fetch all employees (up to 500 — backend now supports this)
   const { data: employeeData, isLoading: empLoading } = useQuery({
     queryKey: ["employees", "all"],
     queryFn: () => getEmployees({ page: 1, page_size: 500 }),
     staleTime: 1000 * 60 * 5,
   });
-  const employees: EmployeeRead[] = employeeData?.items ?? [];
+  const employees: EmployeeRead[] = useMemo(() => {
+    const items = employeeData?.items ?? [];
+    return [...items].sort((a, b) => a.first_name.localeCompare(b.first_name) || a.last_name.localeCompare(b.last_name));
+  }, [employeeData?.items]);
 
   const { data: teamData } = useQuery({
     queryKey: ["teams", "all"],
@@ -276,7 +278,7 @@ function CreateEventPage() {
             {inviteType !== "team" && (
               <div className="mt-4">
                 <Label>Employees</Label>
-                <div className="mt-2 space-y-1 max-h-60 overflow-y-auto">
+                <div className="mt-2">
                   <EmployeeSelector
                     employees={employees}
                     loading={empLoading}
@@ -327,18 +329,18 @@ function CreateEventPage() {
                     <ChevronsUpDown className="inline-block float-right" />
                   </button>
                 </PopoverTrigger>
-                <PopoverContent className="w-[300px]">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Search className="w-4 h-4 text-muted-foreground" />
-                    <Input placeholder="Search employees..." value={organizerQuery} onChange={(e) => setOrganizerQuery(e.target.value)} />
+                <PopoverContent className="w-[300px] p-3">
+                  <div className="relative mb-3">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input placeholder="Search employees..." value={organizerQuery} onChange={(e) => setOrganizerQuery(e.target.value)} className="pl-9" />
                   </div>
-                  <div className="max-h-48 overflow-y-auto">
+                  <div className="max-h-48 overflow-y-auto p-1">
                     {empLoading && <div className="text-sm text-muted-foreground">Loading...</div>}
                     {!empLoading && filteredEmployees.length === 0 && (
                       <div className="text-sm text-muted-foreground">No employees found.</div>
                     )}
                     {!empLoading && filteredEmployees.map((emp) => (
-                      <div key={emp.id} className="py-2 px-1 hover:bg-muted rounded cursor-pointer" onClick={() => { setOrganizerId(String(emp.id)); setOrganizerQuery(""); }}>
+                      <div key={emp.id} className="py-2 px-2 hover:bg-secondary/40 rounded-md cursor-pointer transition-colors" onClick={() => { setOrganizerId(String(emp.id)); setOrganizerQuery(""); }}>
                         <div className="font-medium text-sm">{emp.first_name} {emp.last_name}</div>
                         <div className="text-xs text-muted-foreground">{emp.email}</div>
                       </div>

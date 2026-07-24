@@ -72,13 +72,14 @@ function EmployeesPage() {
 
   // Apply all client-side filters: dept/role multi-select
   const visibleEmployees = useMemo(() => {
-    return allEmployees.filter((emp) => {
+    const filtered = allEmployees.filter((emp) => {
       const deptMatch =
         selectedDepts.length === 0 ||
         (emp.department != null && selectedDepts.includes(emp.department)) ||
         (emp.job_title != null && selectedDepts.includes(emp.job_title));
       return deptMatch;
     });
+    return filtered.sort((a, b) => a.first_name.localeCompare(b.first_name) || a.last_name.localeCompare(b.last_name));
   }, [allEmployees, selectedDepts]);
 
   // --- Checkbox helpers ---
