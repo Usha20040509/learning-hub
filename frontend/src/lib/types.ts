@@ -132,6 +132,7 @@ export interface LeaderboardItem {
   employee: string;
   attendance: string;
   sessions_attended: number;
+  total_sessions: number;
   assignments: number;
 }
 

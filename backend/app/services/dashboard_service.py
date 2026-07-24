@@ -245,6 +245,7 @@ class DashboardService:
                 employee=emp_name,
                 attendance=f"{int(attendance_rate * 100)}%",
                 sessions_attended=attended_parts,
+                total_sessions=total_parts,
                 assignments=assignments_submitted,
             ))
 

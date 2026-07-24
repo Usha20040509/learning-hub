@@ -310,10 +310,10 @@ function EmployeesPage() {
         )}
       </Card>
 
-      <Card className="shadow-card border-border/60 overflow-hidden">
-        <div className="overflow-x-auto">
+      <Card className="shadow-card border-border/60 overflow-hidden flex flex-col">
+        <div className="overflow-auto max-h-[calc(100vh-320px)] min-h-[300px] relative">
           <Table>
-            <TableHeader>
+            <TableHeader className="sticky top-0 z-10 bg-background shadow-[0_1px_0_0_hsl(var(--border))]">
               <TableRow className="bg-secondary/50 hover:bg-secondary/50">
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>

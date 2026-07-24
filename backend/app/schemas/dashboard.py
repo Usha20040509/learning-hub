@@ -63,6 +63,7 @@ class LeaderboardItem(BaseModel):
     employee: str
     attendance: str       # percentage string e.g. "87%"
     sessions_attended: int
+    total_sessions: int
     assignments: int
 
 

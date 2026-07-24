@@ -405,7 +405,9 @@ function DashboardPage() {
                             </div>
                           </td>
                           <td className="py-3 px-3 text-center">{row.attendance}</td>
-                          <td className="py-3 px-3 text-center">{row.sessions_attended}</td>
+                          <td className="py-3 px-3 text-center">
+                            {row.sessions_attended} <span className="text-muted-foreground/60 text-[10px]">/ {row.total_sessions}</span>
+                          </td>
                           <td className="py-3 px-3 text-center">{row.assignments}</td>
                         </tr>
                         );
