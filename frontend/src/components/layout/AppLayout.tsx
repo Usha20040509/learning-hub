@@ -37,7 +37,7 @@ const nav: { to: string; label: string; icon: typeof LayoutDashboard; exact?: bo
   { to: "/create-event", label: "Create Event", icon: PlusCircle },
   { to: "/my-sessions", label: "My Sessions", icon: UserCircle2 },
   { to: "/employees", label: "Employees", icon: Users },
-  { to: "/teams", label: "Teams", icon: GraduationCap },
+  // { to: "/teams", label: "Teams", icon: GraduationCap },
 ];
 
 export function AppLayout({ children }: { children: ReactNode }) {

@@ -46,11 +46,13 @@ export interface EventRead {
   status: string;
   training_catalog_id?: number | null;
   organizer_id: number;
+  owner_id?: number | null;
   meeting_link?: string | null;
   assignment_included?: boolean;
   invited_employee_ids: number[];
   invited_team_ids: number[];
   organizer_name?: string | null;
+  owner_name?: string | null;
   invited_employee_names?: string[];
   invited_team_names?: string[];
   is_recurring?: boolean;
@@ -69,6 +71,7 @@ export interface EventCreate {
   status?: string;
   training_catalog_id?: number | null;
   organizer_id: number;
+  owner_id?: number | null;
   meeting_link?: string | null;    // optional — no link = no Join button
   assignment_included?: boolean;
   invited_employee_ids: number[];

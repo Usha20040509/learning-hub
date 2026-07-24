@@ -12,6 +12,7 @@ class EventCreate(BaseModel):
     status: str = "scheduled"
     training_catalog_id: int | None = None
     organizer_id: int
+    owner_id: int | None = None
     meeting_link: str | None = None          # optional — no meeting link = no Join button
     assignment_included: bool = False
     invited_employee_ids: list[int] = Field(default_factory=list)
@@ -40,5 +41,6 @@ class EventRead(EventCreate):
     id: int
     series_id: str | None = None
     organizer_name: str | None = None
+    owner_name: str | None = None
     invited_employee_names: list[str] = Field(default_factory=list)
     invited_team_names: list[str] = Field(default_factory=list)

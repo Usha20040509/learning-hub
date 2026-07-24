@@ -80,6 +80,11 @@ class EventService:
 
         new_participants = set(employee_ids)
         new_participants.add(data.organizer_id)
+        if data.owner_id:
+            owner = self.employee_repository.get_by_id(data.owner_id)
+            if not owner:
+                raise APIException("Owner employee not found", 404)
+            new_participants.add(data.owner_id)
 
         if not data.ignore_clashes:
             for p_start, p_end in proposed_times:
@@ -92,6 +97,8 @@ class EventService:
                     overlap_participants = {p.employee_id for p in overlap_event.participants}
                     if overlap_event.organizer_id:
                         overlap_participants.add(overlap_event.organizer_id)
+                    if overlap_event.owner_id:
+                        overlap_participants.add(overlap_event.owner_id)
                     
                     clashing_people = new_participants.intersection(overlap_participants)
                     if clashing_people:
@@ -153,6 +160,7 @@ class EventService:
                 status=data.status,
                 training_catalog_id=data.training_catalog_id,
                 organizer_id=data.organizer_id,
+                owner_id=data.owner_id,
                 meeting_link=data.meeting_link or None,
                 assignment_included=data.assignment_included,
             )
@@ -197,6 +205,11 @@ class EventService:
 
         new_participants = set(employee_ids)
         new_participants.add(data.organizer_id)
+        if data.owner_id:
+            owner = self.employee_repository.get_by_id(data.owner_id)
+            if not owner:
+                raise APIException("Owner employee not found", 404)
+            new_participants.add(data.owner_id)
 
         if not data.ignore_clashes:
             overlapping = self.repository.db.query(Event).filter(
@@ -209,6 +222,8 @@ class EventService:
                 overlap_participants = {p.employee_id for p in overlap_event.participants}
                 if overlap_event.organizer_id:
                     overlap_participants.add(overlap_event.organizer_id)
+                if getattr(overlap_event, "owner_id", None):
+                    overlap_participants.add(overlap_event.owner_id)
                 
                 clashing_people = new_participants.intersection(overlap_participants)
                 if clashing_people:
@@ -334,12 +349,20 @@ class EventService:
 
     def _to_read(self, item: Event) -> EventRead:
         organizer_name = None
-        if item.organizer:
+        if getattr(item, "organizer", None):
             organizer_name = f"{item.organizer.first_name} {item.organizer.last_name}"
-        elif item.organizer_id:
+        elif getattr(item, "organizer_id", None):
             organizer = self.employee_repository.get_by_id(item.organizer_id)
             if organizer:
                 organizer_name = f"{organizer.first_name} {organizer.last_name}"
+
+        owner_name = None
+        if getattr(item, "owner", None):
+            owner_name = f"{item.owner.first_name} {item.owner.last_name}"
+        elif getattr(item, "owner_id", None):
+            owner = self.employee_repository.get_by_id(item.owner_id)
+            if owner:
+                owner_name = f"{owner.first_name} {owner.last_name}"
 
         return EventRead(
             id=item.id,
@@ -351,11 +374,13 @@ class EventService:
             status=item.status,
             training_catalog_id=item.training_catalog_id,
             organizer_id=item.organizer_id,
+            owner_id=item.owner_id,
             meeting_link=item.meeting_link,
             assignment_included=item.assignment_included,
             invited_employee_ids=[participant.employee_id for participant in item.participants],
             invited_team_ids=[invitation.team_id for invitation in item.invited_teams],
             organizer_name=organizer_name,
+            owner_name=owner_name,
             invited_employee_names=[f"{p.employee.first_name} {p.employee.last_name}" for p in item.participants if p.employee],
             invited_team_names=[et.team.name for et in item.invited_teams if et.team],
             series_id=item.series_id,

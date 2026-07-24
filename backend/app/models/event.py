@@ -27,6 +27,7 @@ class Event(Base):
     status: Mapped[str] = mapped_column(String(50), nullable=False, default="scheduled")
     training_catalog_id: Mapped[int | None] = mapped_column(ForeignKey("training_catalog.id"), nullable=True)
     organizer_id: Mapped[int | None] = mapped_column(ForeignKey("employees.id"), nullable=True)
+    owner_id: Mapped[int | None] = mapped_column(ForeignKey("employees.id"), nullable=True)
     meeting_link: Mapped[str | None] = mapped_column(String(500), nullable=True)
     assignment_included: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     series_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
@@ -34,6 +35,7 @@ class Event(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     catalog_item: Mapped["TrainingCatalog | None"] = relationship(back_populates="events")
-    organizer: Mapped["Employee | None"] = relationship()
+    organizer: Mapped["Employee | None"] = relationship(foreign_keys=[organizer_id])
+    owner: Mapped["Employee | None"] = relationship(foreign_keys=[owner_id])
     participants: Mapped[list["EventParticipant"]] = relationship(back_populates="event", cascade="all, delete-orphan")
     invited_teams: Mapped[list["EventTeam"]] = relationship(back_populates="event", cascade="all, delete-orphan")

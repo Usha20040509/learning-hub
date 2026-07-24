@@ -81,6 +81,7 @@ function eventReadToAppEvent(e: EventRead): AppEvent {
     invitedCount: e.invited_employee_ids?.length ?? 0,
     seriesId: e.series_id ?? null,
     organizerId: e.organizer_id,
+    ownerId: e.owner_id,
   };
 }
 
@@ -264,7 +265,7 @@ function EventsPage() {
                           <DropdownMenuItem onClick={() => view(e)}>
                             <Eye className="h-4 w-4 mr-2" /> View
                           </DropdownMenuItem>
-                          {((user?.id === e.organizerId) || isManagerWithEditAccess(user)) && (
+                          {((user?.id === e.organizerId) || (user?.id === e.ownerId) || isManagerWithEditAccess(user)) && (
                             <>
                               <DropdownMenuItem onClick={() => navigate({ to: "/edit-event/$eventId", params: { eventId: e.id.toString() } })}>
                                 <Pencil className="h-4 w-4 mr-2" /> Edit

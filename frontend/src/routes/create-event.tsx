@@ -73,6 +73,9 @@ function CreateEventPage() {
   const [organizerId, setOrganizerId] = useState<string>(
     currentUser ? String(currentUser.id) : ""
   );
+  const [ownerId, setOwnerId] = useState<string>(
+    currentUser ? String(currentUser.id) : ""
+  );
   const [date, setDate] = useState("");
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
@@ -114,13 +117,29 @@ function CreateEventPage() {
   });
   const teams: TeamRead[] = teamData?.items ?? [];
 
-  // organizer search state
+  // organizer/owner search state
   const [organizerQuery, setOrganizerQuery] = useState("");
-  const filteredEmployees = employees.filter((emp) => {
-    const s = organizerQuery.trim().toLowerCase();
-    if (!s) return true;
-    return (`${emp.first_name} ${emp.last_name}`.toLowerCase().includes(s) || emp.email.toLowerCase().includes(s));
-  });
+  const [ownerQuery, setOwnerQuery] = useState("");
+
+  const filteredEmployees = useMemo(() => {
+    if (!organizerQuery) return employees;
+    const lower = organizerQuery.toLowerCase();
+    return employees.filter(e =>
+      e.first_name.toLowerCase().includes(lower) ||
+      e.last_name.toLowerCase().includes(lower) ||
+      e.email.toLowerCase().includes(lower)
+    );
+  }, [employees, organizerQuery]);
+
+  const filteredOwnerEmployees = useMemo(() => {
+    if (!ownerQuery) return employees;
+    const lower = ownerQuery.toLowerCase();
+    return employees.filter(e =>
+      e.first_name.toLowerCase().includes(lower) ||
+      e.last_name.toLowerCase().includes(lower) ||
+      e.email.toLowerCase().includes(lower)
+    );
+  }, [employees, ownerQuery]);
 
   const reset = () => {
     setType("training"); setTitle(""); setDescription("");
@@ -180,6 +199,7 @@ function CreateEventPage() {
         status: "scheduled",
         training_catalog_id: null,
         organizer_id: Number(organizerId),
+        owner_id: ownerId ? Number(ownerId) : null,
         meeting_link: meetingLink.trim() || null,
         assignment_included: assignmentIncluded,
         invited_employee_ids: invitedEmpIds,
@@ -216,6 +236,11 @@ function CreateEventPage() {
 
   const organizerName = (() => {
     const emp = employees.find((e) => String(e.id) === organizerId);
+    return emp ? `${emp.first_name} ${emp.last_name}` : "";
+  })();
+
+  const ownerName = (() => {
+    const emp = employees.find((e) => String(e.id) === ownerId);
     return emp ? `${emp.first_name} ${emp.last_name}` : "";
   })();
 
@@ -350,8 +375,43 @@ function CreateEventPage() {
               </Popover>
             </div>
 
-            <div>
-              <Label>Date</Label>
+            <div className="pt-2">
+              <Label htmlFor="owner">Owner <span className="text-xs text-muted-foreground font-normal">(optional)</span></Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button className="w-full mt-1.5 text-left px-3 py-2 border rounded-md bg-white">
+                    {ownerName || "Select owner"}
+                    <ChevronsUpDown className="inline-block float-right" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[300px] p-3">
+                  <div className="relative mb-3">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input placeholder="Search employees..." value={ownerQuery} onChange={(e) => setOwnerQuery(e.target.value)} className="pl-9" />
+                  </div>
+                  <div className="max-h-48 overflow-y-auto p-1">
+                    {empLoading && <div className="text-sm text-muted-foreground">Loading...</div>}
+                    {!empLoading && filteredOwnerEmployees.length === 0 && (
+                      <div className="text-sm text-muted-foreground">No employees found.</div>
+                    )}
+                    {!empLoading && filteredOwnerEmployees.map((emp) => (
+                      <div key={emp.id} className="py-2 px-2 hover:bg-secondary/40 rounded-md cursor-pointer transition-colors" onClick={() => { setOwnerId(String(emp.id)); setOwnerQuery(""); }}>
+                        <div className="font-medium text-sm">{emp.first_name} {emp.last_name}</div>
+                        <div className="text-xs text-muted-foreground">{emp.email}</div>
+                      </div>
+                    ))}
+                    {!empLoading && ownerId && (
+                      <div className="py-2 px-2 mt-2 border-t border-border hover:bg-destructive/10 text-destructive rounded-md cursor-pointer transition-colors text-sm text-center" onClick={() => { setOwnerId(""); setOwnerQuery(""); }}>
+                        Clear Selection
+                      </div>
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <div className="pt-2">
+              <Label>Date <span className="text-destructive">*</span></Label>
               <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="mt-1.5" />
             </div>
 

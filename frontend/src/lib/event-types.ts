@@ -25,6 +25,7 @@ export interface AppEvent {
   invitedCount: number;
   assignmentIncluded?: boolean;
   organizerId?: number;
+  ownerId?: number;
   seriesId?: string | null;
   isRecurringGroup?: boolean;
   recurrenceUntil?: string;

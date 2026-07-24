@@ -326,11 +326,6 @@ function TeamsPage() {
                       {team.member_count}{" "}
                       {team.member_count === 1 ? "member" : "members"}
                     </Badge>
-                    {team.is_active && (
-                      <span className="text-[11px] font-medium text-emerald-600">
-                        Active
-                      </span>
-                    )}
                   </div>
                 </div>
               </div>

@@ -33,7 +33,7 @@ export function EventDetailsDialog({
   if (!event) return null;
 
   const currentUser = getCurrentUser();
-  const isOrganizer = currentUser && (event.organizerId === currentUser.id || isManagerWithEditAccess(currentUser));
+  const isOrganizer = currentUser && (event.organizerId === currentUser.id || event.ownerId === currentUser.id || isManagerWithEditAccess(currentUser));
   const hasMeetingLink = Boolean(event.meetingLink?.trim());
 
   const handleUpload = async () => {

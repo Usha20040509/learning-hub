@@ -213,7 +213,7 @@ function EmployeesPage() {
                   ) : (
                     filteredDeptOptions.map((dept) => {
                       const count = allEmployees.filter(
-                        (e) => e.department === dept,
+                        (e) => e.department === dept || e.job_title === dept,
                       ).length;
                       return (
                         <label

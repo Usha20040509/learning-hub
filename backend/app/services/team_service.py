@@ -48,7 +48,8 @@ class TeamService:
         self.repository.delete(item)
 
     def _to_read(self, item: Team) -> TeamRead:
-        member_count = len(item.members) if item.members is not None else 0
+        active_members = [m for m in item.members if m.employee and m.employee.is_active] if item.members else []
+        member_count = len(active_members)
         return TeamRead(
             id=item.id,
             team_code=item.team_code,

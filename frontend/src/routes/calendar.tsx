@@ -49,6 +49,7 @@ function eventReadToAppEvent(e: any): AppEvent {
     invitedCount: e.invited_employee_ids?.length ?? 0,
     assignmentIncluded: e.assignment_included,
     organizerId: e.organizer_id,
+    ownerId: e.owner_id,
   };
 }
 
@@ -76,6 +77,7 @@ function mapCalendarEventToAppEvent(event: any): AppEvent {
     invitedCount: 0,
     assignmentIncluded: event.assignment_included,
     organizerId: event.organizer_id,
+    ownerId: event.owner_id,
   };
 }
 

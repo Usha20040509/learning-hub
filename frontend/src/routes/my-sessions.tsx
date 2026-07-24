@@ -45,6 +45,7 @@ function mapSessionToAppEvent(session: any): AppEvent {
     invitedCount: 0,
     assignmentIncluded: session.assignment_included,
     organizerId: session.organizer_id,
+    ownerId: session.owner_id,
   };
 }
 
@@ -99,6 +100,7 @@ function MySessionsPage() {
       invitedCount: e.invited_employee_ids?.length ?? 0,
       assignmentIncluded: e.assignment_included,
       organizerId: e.organizer_id,
+      ownerId: e.owner_id,
     };
   }
 
