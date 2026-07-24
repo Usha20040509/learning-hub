@@ -87,6 +87,7 @@ function DashboardPage() {
   const [selected, setSelected] = useState<AppEvent | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [leaderboardOpen, setLeaderboardOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("my-dashboard");
 
   const currentUser = getCurrentUser();
   const employeeId = currentUser?.id ?? 0;
@@ -181,32 +182,55 @@ function DashboardPage() {
   return (
     <AppLayout>
       {/* Hero banner */}
-      <div className="rounded-2xl bg-gradient-to-br from-primary to-primary/70 text-primary-foreground p-6 md:p-8 shadow-elevated mb-6 relative overflow-hidden">
-        <div className="absolute -right-8 -top-8 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
-        <div className="absolute right-20 bottom-0 h-32 w-32 rounded-full bg-white/5 blur-xl" />
-        <div className="relative flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <div className="text-sm font-medium opacity-90">
-              {greeting()}{currentUser ? `, ${currentUser.first_name}` : ""}
+      <div className={cn("rounded-2xl bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-elevated mb-6 relative overflow-hidden transition-all duration-300", activeTab === "team-leaderboard" ? "p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4" : "p-6 md:p-8")}>
+        <div className="absolute -right-8 -top-8 h-40 w-40 rounded-full bg-white/10 blur-2xl pointer-events-none" />
+        <div className="absolute right-20 bottom-0 h-32 w-32 rounded-full bg-white/5 blur-xl pointer-events-none" />
+        
+        {activeTab === "team-leaderboard" ? (
+          <>
+            <div className="relative z-10 flex items-center gap-3 animate-in fade-in slide-in-from-left-4 duration-300">
+              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/20 shadow-soft">
+                <Award className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold leading-tight">Team Leaderboard</h1>
+                <p className="text-xs font-medium opacity-90">View attendance and assignment rankings</p>
+              </div>
             </div>
-            <h1 className="text-3xl md:text-4xl font-bold mt-1">Learning Hub</h1>
-            <div className="mt-1 text-sm opacity-90">
-              {currentUser?.job_title ?? "Your training dashboard"}
-              {currentUser?.group_name ? ` · ${currentUser.group_name}` : ""}
+            <div className="relative z-10 flex items-center gap-2 animate-in fade-in slide-in-from-right-4 duration-300">
+              <Button asChild variant="secondary" className="bg-white/15 hover:bg-white/25 text-white border-0 backdrop-blur h-9 text-xs px-3">
+                <Link to="/calendar"><CalendarDays className="h-3.5 w-3.5 mr-1.5" />Open calendar</Link>
+              </Button>
+              <Button asChild className="bg-white text-primary hover:bg-white/90 h-9 text-xs px-3">
+                <Link to="/create-event">Create event</Link>
+              </Button>
+            </div>
+          </>
+        ) : (
+          <div className="relative flex flex-wrap items-end justify-between gap-4 z-10 animate-in fade-in duration-300">
+            <div>
+              <div className="text-sm font-medium opacity-90">
+                {greeting()}{currentUser ? `, ${currentUser.first_name}` : ""}
+              </div>
+              <h1 className="text-3xl md:text-4xl font-bold mt-1">Learning Hub</h1>
+              <div className="mt-1 text-sm opacity-90">
+                {currentUser?.job_title ?? "Your training dashboard"}
+                {currentUser?.group_name ? ` · ${currentUser.group_name}` : ""}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button asChild variant="secondary" className="bg-white/15 hover:bg-white/25 text-white border-0 backdrop-blur">
+                <Link to="/calendar"><CalendarDays className="h-4 w-4 mr-1.5" />Open calendar</Link>
+              </Button>
+              <Button asChild className="bg-white text-primary hover:bg-white/90">
+                <Link to="/create-event">Create event</Link>
+              </Button>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button asChild variant="secondary" className="bg-white/15 hover:bg-white/25 text-white border-0 backdrop-blur">
-              <Link to="/calendar"><CalendarDays className="h-4 w-4 mr-1.5" />Open calendar</Link>
-            </Button>
-            <Button asChild className="bg-white text-primary hover:bg-white/90">
-              <Link to="/create-event">Create event</Link>
-            </Button>
-          </div>
-        </div>
+        )}
       </div>
 
-      <Tabs defaultValue="my-dashboard" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="mb-6">
           <TabsTrigger value="my-dashboard">My Dashboard</TabsTrigger>
           <TabsTrigger value="team-leaderboard">Team Leaderboard</TabsTrigger>

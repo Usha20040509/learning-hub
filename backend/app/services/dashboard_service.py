@@ -232,8 +232,12 @@ class DashboardService:
         employees = self.db.query(Employee).filter(Employee.is_active == True).all()
 
         leaderboard_items = []
+        now = datetime.utcnow()
         for emp in employees:
-            participations = self.db.query(EventParticipant).filter(EventParticipant.employee_id == emp.id).all()
+            participations = self.db.query(EventParticipant).join(Event, EventParticipant.event_id == Event.id).filter(
+                EventParticipant.employee_id == emp.id,
+                Event.end_time <= now
+            ).all()
             emp_name = f"{emp.first_name} {emp.last_name}"
 
             total_parts = len(participations)
