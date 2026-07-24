@@ -147,3 +147,32 @@ export interface HealthResponse {
   status: string;
   service: string;
 }
+export interface EmployeeSessionItem {
+  id: number;
+  title: string;
+  description?: string;
+  start_time: string;
+  end_time: string;
+  event_type: string;
+  status: string;
+  attended: boolean;
+  attendance_status: string;
+  assignment_included: boolean;
+  assignment_submitted: boolean;
+  assignment_status: string;
+  organizer_name?: string;
+}
+
+export interface EmployeeStatsResponse {
+  employee_id: number;
+  employee_name: string;
+  employee_email: string;
+  employee_title?: string;
+  employee_group?: string;
+  attendance_percentage: string;
+  sessions_attended: number;
+  total_sessions: number;
+  assignments_submitted: number;
+  total_assignments: number;
+  sessions: EmployeeSessionItem[];
+}

@@ -25,6 +25,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { EventCard } from "@/components/EventCard";
 import { EventDetailsDialog } from "@/components/EventDetailsDialog";
+import { EmployeeDetailsDialog } from "@/components/EmployeeDetailsDialog";
 import { getDashboardSummary, getEvent, getLeaderboard, getEvents } from "@/lib/api";
 import { getCurrentUser } from "@/lib/auth";
 import type { AppEvent } from "@/lib/event-types";
@@ -89,6 +90,8 @@ function DashboardPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [leaderboardOpen, setLeaderboardOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("my-dashboard");
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | null>(null);
+  const [employeeDialogOpen, setEmployeeDialogOpen] = useState(false);
 
   const currentUser = getCurrentUser();
   const employeeId = currentUser?.id ?? 0;
@@ -420,7 +423,14 @@ function DashboardPage() {
                       {sortedLeaderboard.slice(0, 10).map((row, idx) => {
                         const isCurrentUser = currentUser && row.employee === `${currentUser.first_name} ${currentUser.last_name}`;
                         return (
-                        <tr key={row.employee} className={cn("border-b border-border/40 transition-colors font-medium", isCurrentUser ? "bg-red-50/50 hover:bg-red-50/80" : "hover:bg-secondary/15")}>
+                        <tr 
+                          key={row.employee} 
+                          className={cn("border-b border-border/40 transition-colors font-medium cursor-pointer", isCurrentUser ? "bg-red-50/50 hover:bg-red-50/80" : "hover:bg-secondary/15")}
+                          onClick={() => {
+                            setSelectedEmployeeId(row.employee_id);
+                            setEmployeeDialogOpen(true);
+                          }}
+                        >
                           <td className="py-3 px-3 text-center text-xs text-muted-foreground font-bold">{idx + 1}</td>
                           <td className="py-3 px-3 text-foreground">
                             <div className="flex items-center gap-2">
@@ -505,24 +515,6 @@ function DashboardPage() {
             </div>
           </div>
 
-          {/* All Company Upcoming events */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold text-foreground">All Upcoming Company Sessions</h2>
-              <span className="text-xs text-muted-foreground">Showing sessions for all employees</span>
-            </div>
-            {allUpcoming.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-border py-8 text-center text-sm text-muted-foreground">
-                No upcoming company sessions scheduled.
-              </div>
-            ) : (
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {allUpcoming.slice(0, 4).map((event) => (
-                  <EventCard key={event.id} event={event} onView={open} />
-                ))}
-              </div>
-            )}
-          </div>
         </TabsContent>
       </Tabs>
 
@@ -577,7 +569,11 @@ function DashboardPage() {
                     return (
                     <tr
                       key={row.employee}
-                      className={cn("border-b border-border/40 transition-colors font-medium", isCurrentUser ? "bg-red-50/50 hover:bg-red-50/80" : "hover:bg-secondary/15")}
+                      className={cn("border-b border-border/40 transition-colors font-medium cursor-pointer", isCurrentUser ? "bg-red-50/50 hover:bg-red-50/80" : "hover:bg-secondary/15")}
+                      onClick={() => {
+                        setSelectedEmployeeId(row.employee_id);
+                        setEmployeeDialogOpen(true);
+                      }}
                     >
                       <td className="py-3 px-2 text-center text-xs text-muted-foreground font-bold">
                         {idx + 1}
@@ -602,6 +598,12 @@ function DashboardPage() {
           </div>
         </div>
       )}
+
+      <EmployeeDetailsDialog 
+        employeeId={selectedEmployeeId} 
+        open={employeeDialogOpen} 
+        onOpenChange={setEmployeeDialogOpen} 
+      />
     </AppLayout>
   );
 }

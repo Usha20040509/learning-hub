@@ -10,6 +10,7 @@ import type {
   EmployeeRead,
   DashboardSummary,
   DashboardLeaderboardResponse,
+  EmployeeStatsResponse,
 } from "./types";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
@@ -141,15 +142,16 @@ export function getMySessions(options: {
   team?: string;
 }) {
   return apiFetch<MySessionsResponse>(
-    `/dashboard/my-sessions${buildQuery({
-      employee_id: options.employee_id,
-      training: options.training,
-      workshop: options.workshop,
-      organizer: options.organizer,
-      date: options.date,
-      team: options.team,
-    })}`,
+    `/dashboard/my-sessions${buildQuery(options)}`,
   );
+}
+
+export function getLeaderboard() {
+  return apiFetch<DashboardLeaderboardResponse>("/dashboard/leaderboard");
+}
+
+export function getEmployeeStats(employeeId: number) {
+  return apiFetch<EmployeeStatsResponse>(`/dashboard/employees/${employeeId}/stats`);
 }
 
 export function getHealthStatus() {

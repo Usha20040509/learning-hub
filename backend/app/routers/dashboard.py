@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_db
-from app.schemas.dashboard import CalendarResponse, DashboardSummary, MySessionsResponse, DashboardLeaderboardResponse
+from app.schemas.dashboard import CalendarResponse, DashboardSummary, MySessionsResponse, DashboardLeaderboardResponse, EmployeeStatsResponse
 from app.services.dashboard_service import DashboardService
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
@@ -46,3 +46,8 @@ def get_my_sessions(
 @router.get("/leaderboard", response_model=DashboardLeaderboardResponse, summary="Get dashboard leaderboard")
 def get_leaderboard(service: DashboardService = Depends(get_dashboard_service)) -> DashboardLeaderboardResponse:
     return service.get_leaderboard()
+
+
+@router.get("/employees/{employee_id}/stats", response_model=EmployeeStatsResponse, summary="Get employee detailed stats")
+def get_employee_stats(employee_id: int, service: DashboardService = Depends(get_dashboard_service)) -> EmployeeStatsResponse:
+    return service.get_employee_stats(employee_id)

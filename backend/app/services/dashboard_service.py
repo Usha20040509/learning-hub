@@ -246,6 +246,7 @@ class DashboardService:
             assignments_submitted = sum(1 for p in participations if p.assignment_submitted)
 
             leaderboard_items.append(LeaderboardItem(
+                employee_id=emp.id,
                 employee=emp_name,
                 attendance=f"{int(attendance_rate * 100)}%",
                 sessions_attended=attended_parts,
@@ -284,3 +285,74 @@ class DashboardService:
         start = now.replace(hour=0, minute=0, second=0, microsecond=0)
         end = start + timedelta(days=1)
         return start <= event.start_time < end
+
+    def get_employee_stats(self, employee_id: int) -> "EmployeeStatsResponse":
+        from app.models.employee import Employee
+        from app.schemas.dashboard import EmployeeStatsResponse, EmployeeSessionItem
+        from fastapi import HTTPException
+
+        emp = self.db.query(Employee).filter(Employee.id == employee_id).first()
+        if not emp:
+            raise HTTPException(status_code=404, detail="Employee not found")
+
+        # Get all participations for this employee
+        participations = self.db.query(EventParticipant).join(Event, EventParticipant.event_id == Event.id).filter(
+            EventParticipant.employee_id == employee_id
+        ).order_by(Event.start_time.desc()).all()
+
+        now = datetime.utcnow()
+        completed_parts = [p for p in participations if p.event.end_time <= now]
+        
+        total_sessions = len(completed_parts)
+        attended_sessions = sum(1 for p in completed_parts if p.attended)
+        attendance_percentage = f"{int((attended_sessions / total_sessions * 100))}%" if total_sessions > 0 else "0%"
+        
+        assignment_parts = [p for p in completed_parts if p.event.assignment_included]
+        total_assignments = len(assignment_parts)
+        assignments_submitted = sum(1 for p in assignment_parts if p.assignment_submitted)
+        
+        sessions = []
+        for p in participations:
+            ev = p.event
+            status = "Completed" if ev.end_time <= now else "Upcoming"
+            
+            attendance_status = "Not scheduled"
+            if status == "Completed":
+                attendance_status = "Attended" if p.attended else "Not Attended"
+                
+            assignment_status = "Not available"
+            if ev.assignment_included:
+                if status == "Completed":
+                    assignment_status = "Submitted" if p.assignment_submitted else "Not Submitted"
+                else:
+                    assignment_status = "Pending"
+                    
+            sessions.append(EmployeeSessionItem(
+                id=ev.id,
+                title=ev.title,
+                description=ev.description,
+                start_time=ev.start_time,
+                end_time=ev.end_time,
+                event_type=self._infer_event_type(ev),
+                status=status,
+                attended=p.attended,
+                attendance_status=attendance_status,
+                assignment_included=ev.assignment_included,
+                assignment_submitted=p.assignment_submitted,
+                assignment_status=assignment_status,
+                organizer_name=self._get_organizer_name(ev)
+            ))
+
+        return EmployeeStatsResponse(
+            employee_id=emp.id,
+            employee_name=f"{emp.first_name} {emp.last_name}",
+            employee_email=emp.email,
+            employee_title=emp.job_title,
+            employee_group=emp.group_name,
+            attendance_percentage=attendance_percentage,
+            sessions_attended=attended_sessions,
+            total_sessions=total_sessions,
+            assignments_submitted=assignments_submitted,
+            total_assignments=total_assignments,
+            sessions=sessions
+        )
