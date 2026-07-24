@@ -185,9 +185,6 @@ export function deleteEvent(eventId: number, delete_series: boolean = false) {
   });
 }
 
-export function getLeaderboard() {
-  return apiFetch<DashboardLeaderboardResponse>("/dashboard/leaderboard");
-}
 
 export async function uploadEventResults(eventId: number, file: File): Promise<{ message: string }> {
   const formData = new FormData();
