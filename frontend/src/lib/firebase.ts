@@ -8,6 +8,9 @@ import {
   sendSignInLinkToEmail,
   isSignInWithEmailLink,
   signInWithEmailLink,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
   signOut as firebaseSignOut,
   type User,
 } from "firebase/auth";
@@ -78,3 +81,29 @@ export async function completeMagicLinkSignIn(): Promise<{ idToken: string; user
 export async function signOutFirebase(): Promise<void> {
   await firebaseSignOut(firebaseAuth);
 }
+
+/**
+ * Standard Email and Password Sign in.
+ */
+export async function signInWithPassword(email: string, password: string): Promise<{ idToken: string; user: User }> {
+  const result = await signInWithEmailAndPassword(firebaseAuth, email, password);
+  const idToken = await result.user.getIdToken();
+  return { idToken, user: result.user };
+}
+
+/**
+ * Sign up a new user with Email and Password.
+ */
+export async function signUpWithPassword(email: string, password: string): Promise<{ idToken: string; user: User }> {
+  const result = await createUserWithEmailAndPassword(firebaseAuth, email, password);
+  const idToken = await result.user.getIdToken();
+  return { idToken, user: result.user };
+}
+
+/**
+ * Send a password reset email.
+ */
+export async function resetPassword(email: string): Promise<void> {
+  await sendPasswordResetEmail(firebaseAuth, email);
+}
+

@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { login } from "@/lib/api";
 import { setCurrentUser } from "@/lib/auth";
-import { sendMagicLink, isMagicLinkUrl, completeMagicLinkSignIn } from "@/lib/firebase";
+import { signInWithPassword, signUpWithPassword, resetPassword, isMagicLinkUrl, completeMagicLinkSignIn } from "@/lib/firebase";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -20,11 +20,12 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-type Stage = "enter-email" | "link-sent" | "completing";
+type Stage = "sign-in" | "sign-up" | "forgot-password" | "completing";
 
 function LoginPage() {
   const [email, setEmail] = useState("");
-  const [stage, setStage] = useState<Stage>("enter-email");
+  const [password, setPassword] = useState("");
+  const [stage, setStage] = useState<Stage>("sign-in");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -48,20 +49,57 @@ function LoginPage() {
         } else {
           toast.error("Sign-in failed. The link may have expired — please request a new one.");
         }
-        setStage("enter-email");
+        setStage("sign-in");
       });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleSendLink = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!email.trim() || !password.trim()) return;
+
+    setLoading(true);
+    try {
+      const { idToken } = await signInWithPassword(email.trim().toLowerCase(), password);
+      const user = await login({ id_token: idToken });
+      setCurrentUser(user);
+      toast.success(`Welcome back, ${user.first_name}!`);
+      navigate({ to: "/" });
+    } catch (err: any) {
+      toast.error(err?.message ?? "Invalid email or password.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!email.trim() || !password.trim()) return;
+
+    setLoading(true);
+    try {
+      const { idToken } = await signUpWithPassword(email.trim().toLowerCase(), password);
+      const user = await login({ id_token: idToken });
+      setCurrentUser(user);
+      toast.success(`Account created! Welcome, ${user.first_name}!`);
+      navigate({ to: "/" });
+    } catch (err: any) {
+      toast.error(err?.message ?? "Failed to sign up.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!email.trim()) return;
 
     setLoading(true);
     try {
-      await sendMagicLink(email.trim().toLowerCase());
-      setStage("link-sent");
+      await resetPassword(email.trim().toLowerCase());
+      toast.success("Password reset email sent! Check your inbox.");
+      setStage("sign-in");
     } catch (err: any) {
-      toast.error(err?.message ?? "Failed to send the sign-in link. Please try again.");
+      toast.error(err?.message ?? "Failed to send reset email.");
     } finally {
       setLoading(false);
     }
@@ -85,17 +123,17 @@ function LoginPage() {
             </div>
           )}
 
-          {/* ── Email entry form ── */}
-          {stage === "enter-email" && (
+          {/* ── Sign In form ── */}
+          {stage === "sign-in" && (
             <>
               <div>
                 <h1 className="text-3xl font-semibold">Welcome to Learning Hub</h1>
                 <p className="text-sm text-muted-foreground mt-2">
-                  Enter your company email and we'll send you a sign-in link.
+                  Enter your company email and password to sign in.
                 </p>
               </div>
 
-              <form className="space-y-4" onSubmit={handleSendLink}>
+              <form className="space-y-4" onSubmit={handleSignIn}>
                 <div>
                   <Label htmlFor="email">Company Email</Label>
                   <Input
@@ -109,61 +147,149 @@ function LoginPage() {
                     autoFocus
                   />
                 </div>
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="password">Password</Label>
+                    <button
+                      type="button"
+                      className="text-xs text-primary hover:underline"
+                      onClick={() => setStage("forgot-password")}
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    autoComplete="current-password"
+                    required
+                  />
+                </div>
                 <Button
-                  id="send-link-btn"
+                  id="sign-in-btn"
                   type="submit"
                   className="w-full"
                   disabled={loading}
                 >
-                  {loading ? "Sending…" : "Send sign-in link"}
+                  {loading ? "Signing in…" : "Sign In"}
                 </Button>
               </form>
 
               <p className="text-xs text-muted-foreground text-center">
-                Access is restricted to active MAQ Software employees.
+                New user?{" "}
+                <button
+                  type="button"
+                  className="text-primary hover:underline"
+                  onClick={() => setStage("sign-up")}
+                >
+                  Sign up here
+                </button>
               </p>
             </>
           )}
 
-          {/* ── Link sent confirmation ── */}
-          {stage === "link-sent" && (
-            <div className="text-center space-y-4">
-              {/* Mail icon */}
-              <div className="flex justify-center">
-                <div className="rounded-full bg-primary/10 p-4">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-8 w-8 text-primary"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={1.5}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"
-                    />
-                  </svg>
-                </div>
+          {/* ── Sign Up form ── */}
+          {stage === "sign-up" && (
+            <>
+              <div>
+                <h1 className="text-3xl font-semibold">Create an Account</h1>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Sign up to access the Learning Hub.
+                </p>
               </div>
 
-              <h1 className="text-2xl font-semibold">Check your inbox</h1>
-              <p className="text-sm text-muted-foreground">
-                We sent a sign-in link to <span className="font-medium text-foreground">{email}</span>.
-                Click the link in the email to sign in.
-              </p>
-              <p className="text-xs text-muted-foreground">
-                The link expires in 1 hour. Didn't receive it?{" "}
+              <form className="space-y-4" onSubmit={handleSignUp}>
+                <div>
+                  <Label htmlFor="signup-email">Company Email</Label>
+                  <Input
+                    id="signup-email"
+                    type="email"
+                    placeholder="you@maqsoftware.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    autoFocus
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="signup-password">Choose a Password</Label>
+                  <Input
+                    id="signup-password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    minLength={6}
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={loading}
+                >
+                  {loading ? "Signing up…" : "Sign Up"}
+                </Button>
+              </form>
+
+              <p className="text-xs text-muted-foreground text-center">
+                Already have an account?{" "}
                 <button
                   type="button"
-                  className="underline underline-offset-2 hover:text-foreground transition-colors"
-                  onClick={() => setStage("enter-email")}
+                  className="text-primary hover:underline"
+                  onClick={() => setStage("sign-in")}
                 >
-                  Try again
+                  Sign in here
                 </button>
               </p>
-            </div>
+            </>
+          )}
+
+          {/* ── Forgot Password form ── */}
+          {stage === "forgot-password" && (
+            <>
+              <div>
+                <h1 className="text-2xl font-semibold">Reset Password</h1>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Enter your email address and we will send you a link to set a new password.
+                </p>
+              </div>
+
+              <form className="space-y-4" onSubmit={handleResetPassword}>
+                <div>
+                  <Label htmlFor="reset-email">Company Email</Label>
+                  <Input
+                    id="reset-email"
+                    type="email"
+                    placeholder="you@maqsoftware.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    autoFocus
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={loading}
+                >
+                  {loading ? "Sending link…" : "Send Reset Link"}
+                </Button>
+              </form>
+
+              <div className="text-center mt-2">
+                <button
+                  type="button"
+                  className="text-xs text-muted-foreground hover:text-primary transition-colors"
+                  onClick={() => setStage("sign-in")}
+                >
+                  &larr; Back to sign in
+                </button>
+              </div>
+            </>
           )}
 
         </Card>
